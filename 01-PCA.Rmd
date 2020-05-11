@@ -1,0 +1,657 @@
+
+# Principal Component Analysis
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
+
+library(ExPosition)
+library(InPosition)
+library(MExPosition)
+library(tidyverse)
+library(data4PCCAR)
+library(PTCA4CATA)
+library(grDevices)
+library(corrplot)
+library(devtools)
+library(ggplotify)
+library(gridExtra)
+library(officer)
+library(grid)
+
+#Data----
+BFI = read.csv('../DATA/BFIdata.csv')
+bfi.quant = BFI[BFI$Active == TRUE,6:49]
+
+#color4BFI----
+Ex = grep("Ex", colnames(bfi.quant))
+Ag = grep("Ag", colnames(bfi.quant))
+Co = grep("Co", colnames(bfi.quant))
+Ne = grep("Ne", colnames(bfi.quant))
+Op = grep("Op", colnames(bfi.quant))
+
+col4BFI = c(rep("firebrick2", length(Ex)),
+            rep("darkolivegreen3", length(Ag)),
+            rep("dodgerblue2", length(Co)),
+            rep("mediumpurple3", length(Ne)),
+            rep("goldenrod1", length(Op)))
+
+#memoryColors----
+memoryGroups = droplevels(BFI$memoryGroups[BFI$Active == TRUE])
+memoryColors = recode(memoryGroups, High = 'dodgerblue3', Low = 'brown3')
+```
+
+Principal Component Analysis (PCA) is a data-reduction technique that extracts the most important information out of a data table of quantitative variables. To accomplish this, PCA computes new variables called principal components through linear combinations of the original variables in a data set. This operation is equivalent to performing the singular value decomposition (SVD) on the original data set, which amounts to performing an eigendecomposition of the covariance or correlation matrix. 
+
+### Criteria for principal components
+#### Maximal Inertia
+Inertia is a quantity that denotes the total variance in a matrix. The first principal component in a PCA-solution will capture most of the inertia in a covariance/correlation matrix.
+
+#### Orthogonality
+The second principal component (and third and so on) also maximizes variance explained. However, this is done under the constraint that this variance be orthogonal (i.e. independent) to variance explained by the first component (or, in general, orthogonal to all other previous components). Thus, the overall set of components that results are mutually independent. This implies that PCA will reveal how many *dimensions* of variability exist within the data.
+
+#### A Little linear algebra detour!
+A covariance matrix can be calculated by multiplying a matrix (i.e. data set) by its own transpose. Thus, the diagonal of the resulting matrix will contain the sum of squares for each of the original columns (i.e. variables), and the off-diagonal elements correspond to the sum of cross-products between the variables that intersect at that cell. Obviously, the covariance matrix is symmetric.  
+\indent The correlation matrix is obtained from the covariance matrix via an extra step: the normalization of each column by the total sum of squares. This procedure constrains the elements of the diagonal (i.e. the sums of squares) equal to 1. Thus, all cells will have values between 0 and 1 which correspond to the correlation coefficient.
+
+## The Data 
+To illustrate how to interpret results from PCA, the present chapter analyzes a data table containing 144 observations corresponding to participants who took the Big Five Inventory Questionnaire. Thus, the table contains 44 columns consisting of Extraversion (8), Agreeableness (9), Conscientiousness (9), Neuroticism (8), and Openness (10) items.  
+\indent The observations on this data can be classified into one of two groups—High Episodic Memory and Low Episodic Memory—according to the (quasi-) experimental design.
+
+```{r echo=FALSE}
+head(bfi.quant[,c(Ex[c(1:4)], Ag[c(1:4)], Co[c(1:4)], Ne[c(1:4)], Op[c(1:3)])],4)
+```
+
+## Correlation Matrix
+Since PCA decomposes a correlation matrix, a natural starting point is to visualize said matrix and take note of the strength and directions of the correlation patterns. 
+
+```{r echo=FALSE, include=TRUE}
+corrplot(cor(bfi.quant), 
+         method = "circle", 
+         tl.col = col4BFI,
+         tl.cex = 0.63)
+```
+
+In this correlation matrix, a couple of features can be highlighted. First, there is a strong pattern of correlation between items of the same type. Second, Neuroticism items are negatively correlated to other types of items. These patterns will drive how PCA displays the information in this table.
+
+## Running PCA
+PCA is executed with the 'epPCA' function from the ExPosition package. The function takes multiple parameters:
+  
+1. the data must be preprocessed so that only the quantitative variables of interest are included as parameters to the function.  
+2.  scale = TRUE or 'SS1' vs scale = FALSE: the choice of whether or not to scale will depend on the data at hand. In this case, the data is comprised of responses to items from a single questionnaire and all items follow the same Likert scale. Since all items have the same unit (i.e. use the same response scale), not scaling would allow for the preservation of important information. For example, some items may capture more variance than others, or may vary under very specific conditions thus revealing the importance of these conditions. However, in cases where units for the columns differ, **not** scaling would cause certain columns to 'illegitimately' dominate the PCA decomposition of the table. Thus, as a rule of thumb, scaling is necessary when units of the columns differ and optional (but preferable) when units are the same.  
+3. center = TRUE: the data is centered by default.  
+4.  DESIGN: if there was an experimental design that informed data collection then it can be entered here. This will allow for visualization of group membership. However, other categorial variables, can be entered here too, regardless of whether they are integral part of the experimental design (i.e. posthoc).  
+5.  graph: turned off by preference.  
+```{r echo=TRUE}
+resPCA = epPCA(bfi.quant,
+               scale = FALSE,
+               center = TRUE,
+               DESIGN = memoryGroups,
+               graph = FALSE
+               )
+
+```
+## Scree Plot
+The scree plot below visualizes the amount of inertia explained by each component: the eigenvalue associated with each component (i.e. eigenvector). 
+
+```{r echo=FALSE, include=FALSE}
+resPCA.inf = epPCA.inference.battery(bfi.quant,
+                                     scale = FALSE,
+                                     center = TRUE,
+                                     DESIGN = memoryGroups,
+                                     graph = FALSE
+)
+```
+
+```{r scree, echo=FALSE}
+#ScreePlot----
+scree.PCA = PlotScree(ev = resPCA$ExPosition.Data$eigs,
+          p.ev = resPCA.inf$Inference.Data$components$p.vals
+          )
+```
+
+#### A note on the Permutation Test  
+A key question whenever performing PCA on any data is 'how many components should be kept'? A way to answer this is by distinguishing between significant and non-significant components. This distinction is done all the time in the framework of null hypothesis significant testing. Following the overall reasoning of NHST, if our statistic of interest (i.e. eigenvalue of a component, or total inertia explained by a component) has a value which is unlikely to occur by chance, we may conclude that the observed statistic is (statistically) significant.  
+\indent However, the problem when doing PCA is that it is not evident what the distribution of eigenvalues is under the null hypothesis. The permutation procedure allows for the derivation of a distribution (of eigenvalues) when the null hypothesis is true. This is done by rearranging our data set in a way that breaks any relationships between columns or between rows that might exist—see Berry et al., 2011. 
+  
+The scree plot shows that the permutation test highlighted 5 components as being statistically significant. Visualization of factor scores and loadings is show for these 5 components below. 
+
+## (Row) Factor Scores
+PCA summarizes a data table so that the resulting components capture most of the variance between data points. Therefore, PCA can be thought of as drawing an axis across a multidimensional array of data points, under the condition that projections of the data points onto the first axis are *maximized*; alternatively, it is the distance between the data points and the axis that is *minimized*, in a least-squares sense. The concept of a row factor score (or factor scores) corresponds to this geometric projection of data points onto a component's axis: projection onto axis (i.e. factor scores) = distance of data point from the origin * angle (i.e. loading; explained below).   
+\indent The graph shown below corresponds to a representation of observations (i.e. data points) according to the first and second components. Points are colored by group membership.
+
+```{r echo=FALSE}
+#———————————————————————————————————————————————————————————————————————————————————————
+##RAW Row Factor Scores Dim 1 2----
+#———————————————————————————————————————————————————————————————————————————————————————
+Fi = resPCA$ExPosition.Data$fi
+
+axis1 = 1
+axis2 = 2
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = resPCA$ExPosition.Data$eigs,
+                                tau = round(resPCA$ExPosition.Data$t),
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "BFI Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+group.mean <- aggregate(Fi,
+                        by = list(memoryGroups), # must be a list
+                        mean)
+
+# need to format the results from `aggregate` correctly
+rownames(group.mean) <- group.mean[,1] # Use the first column as row names
+fi.mean <- group.mean[,-1] # Exclude the first column
+
+
+fi.mean.plot <- createFactorMap(fi.mean,
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3)
+fi.WithMean <- my.fi.plot$zeMap_background + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+
+fi.WithMean
+```
+
+We can appreciate that the x-axis corresponding to component 1 captures more spread in the data (17% of inertia) relative to component 2. This will always be the case as component 1 extracts the most variance.  
+\indent The means of each group are also displayed. It appears that groups migh differ according to the first component. However, without a within-group variability estimate, there is as yet no way through which conclude that this difference is statistically significant. 
+  
+## Tolerance Intervals
+
+```{r echo=FALSE}
+## Tolerance Intervals------------------------------------------------------------------------
+TIplot <- MakeToleranceIntervals(Fi,
+                                 design = memoryGroups,
+                                 # line below is needed
+                                 names.of.factors =  c("Dim1","Dim2"), # needed 
+                                 axis1 = axis1, 
+                                 axis2 = axis2,
+                                 col = levels(memoryColors),
+                                 line.size = .50, 
+                                 line.type = 3,
+                                 alpha.ellipse = .2,
+                                 alpha.line    = .4,
+                                 p.level       = .95)
+
+
+fi.WithMeanTI.12.raw <- my.fi.plot$zeMap_background + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + TIplot + fi.labels
+fi.WithMeanTI.12.raw
+```
+
+A convex hull that contains all data points in a group is a good way to graph the total range of factor scores associated with that group. The graph shows that the overlap between groups is high, since the majority of the data point can be found at the intersection between the convex hulls.
+
+## Confidence Intervals
+Confidence intervals for each group's mean can be calculated by computing the bootstrap distribution of group means and excluding value at the tails (e.g., 2.5% in each direction to obtain a 95% confidence interval). This would be the equivalent to a (post hoc) significant testing. 
+
+#### A note about Bootstrapping 
+The Bootstrap method serves as a way to quantify the behavior of population parameters or other statistics. As applied here, the general principle behind the bootstrap is to generate multiple alternate samples for each subsample (i.e. memory groups) so as to simulate their distribution if the experiment were to be replicated. Observations from a group are sampled randomly and *with* replacement, then the mean for the group is calculated for this distribution. The procedure is repeated a large amounts of times (1000 times in this example) to produce a distribution of group means, and from this distribution the confidence interval of the means is computed for the group.  
+\indent Note that the random sampling in a bootstrap procedure draws an entire row from the dataset. Thus, a key feature of the bootstrap is that it preserves the associations between variables, or the effect found in the data, whereas the permutation test does not.  
+ 
+The ellipses graphed below represent the 95% confidence intervals (for components 1 and 2).
+
+```{r bootstrap, echo=FALSE}
+##Bootstrapping group means----------------------------------------------------------------------------
+# Depend on the size of your data, this might take a while
+fi.boot <- Boot4Mean(Fi,
+                     design = memoryGroups,
+                     niter = 1000)
+
+# Check other parameters you can change for this function
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube[,c(axis1:axis2),], # get the first two components
+                              col = levels(memoryColors),
+                              axis1 = axis1,
+                              axis2 = axis2)
+
+fi.WithMeanCI.12.raw <- my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+fi.WithMeanCI.12.raw 
+
+```
+
+Groups statistically differ on component 1; the projection of the ellipses onto component 2 overlap therefore this component does not differentiate between groups.  
+\indent To interpret this difference between groups, we will want to know what variables constitute component 1.
+  
+## (Column) Factor loadings
+In PCA, the rows (i.e. observations) of a data set are described by their factor scores or projections; the columns, however, are described by their loadings or correlations. The combination of the two (scaled by the eigenvalues) gives a complete description of the original data. (Recall the formula, "projection onto axis (i.e. factor scores) = distance of data point from the origin * angle (i.e. loading)").  
+\indent Each variable stands in relation to each of the components and this relationship is described by the (cosine of the) angle between a the variable vector and a component.  
+\indent Note: The factor loadings graphed below have been scaled to represent the total amount of variance in components 1 and 2 (and beyond). This can be done by multiplying the factor loadings (i.e. matrix Q of the SVD) by the diagonal matrix of the eigenvalues.  
+  
+  The plot below captures the overall correlation pattern of the table. 
+
+```{r echo=FALSE}
+#-—————————————————————————————————————————————————————————————————————————————————————
+## Raw Column Factor Scores----
+#———————————————————————————————————————————————————————————————————————————————————————
+Fj = resPCA$ExPosition.Data$fj
+
+# Plot 12----
+axis1 = 1
+axis2 = 2
+
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Loadings", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 3, # the size of the dots
+                              text.cex = 3, # the size of the text
+                              col.points = col4BFI, # color of the dots
+                              col.labels = col4BFI, # color for labels of dots
+)
+
+fj.plot.12.raw <- my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+fj.plot.12.raw
+
+```
+
+Interpreting the angles between variables, the plot shows that items of the same type tend to be associated with each other—the tip of the vectors of the same color point toward the same general direction. The plot also reflects the correlation matrix insofar as neuroticism loads negatively on component 1 which reflects the negative correlation between neuroticism items and other item types. Component 2, however, is more difficult to interpret. 
+ 
+
+## Factor Rotations (Varimax)
+To aid interpretation, factor rotation can be applied to results of a PCA. Varimax, the most popular rotation method, correspond to a rotation eigenvectors within subspace—e.g., the 5 significant components in this example—so that each item loads onto as few components as possible under the constraint that these components remain orthogonal to each other.  
+\indent Our original correlation matrix showed that there is a clear structure in which items of the same type are strongly correlated with each other. In the graph of the factor loadings, component 1 reflects the overall correlation pattern between item types, not within item types. Therefore, performing a varimax rotation would clarify the factor structure so that each component reflects the within-type correlation for a specific item type.  
+  
+### Running varimax
+The code below is used to run varimax on the results of a PCA. Based on the orignal scree plot I decided to keep 5 dimensions. 
+```{r echo=TRUE}
+vari.PCA = epVari(resPCA, dim2keep = 5)
+
+```
+
+This screeplot shows this dimensions after rotation: the eigenvalues have less of a spread, indicating that they are represented more equally. 
+```{r echo=FALSE}
+#New Scree Plot
+PlotScree(ev = c(vari.PCA$rotated.eigs, resPCA$ExPosition.Data$eigs[6:length(resPCA$ExPosition.Data$eigs)]),
+          p.ev = resPCA.inf$Inference.Data$components$p.vals)
+
+```
+
+### The effect of varimax
+
+The plot of factor loadings after rotation shows the effect of varimax. 
+```{r echo=FALSE}
+#———————————————————————————————————————————————————————————————————————————————————————
+## ROTATED Row Factor Scores Dim 1 2----
+#———————————————————————————————————————————————————————————————————————————————————————
+Fi = vari.PCA$rotated.I
+axis1 = 1
+axis2 = 2
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = vari.PCA$rotated.eigs,
+                                tau = round(vari.PCA$rotated.t),
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "Rotated BFI Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+group.mean <- aggregate(Fi,
+                        by = list(memoryGroups), # must be a list
+                        mean)
+
+# need to format the results from `aggregate` correctly
+rownames(group.mean) <- group.mean[,1] # Use the first column as row names
+fi.mean <- group.mean[,-1] # Exclude the first column
+
+
+fi.mean.plot <- createFactorMap(fi.mean,
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3)
+
+##Bootstrapping group means----------------------------------------------------------------------------
+# Depend on the size of your data, this might take a while
+fi.boot <- Boot4Mean(Fi,
+                     design = memoryGroups,
+                     niter = 1000)
+
+# Check other parameters you can change for this function
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube[,c(axis1:axis2),], # get the first two components
+                              col = levels(memoryColors),
+                              axis1 = axis1,
+                              axis2 = axis2)
+
+fi.WithMeanCI.12.rot <- my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+
+#-—————————————————————————————————————————————————————————————————————————————————————
+## ROTATED Column Factor Score----
+#———————————————————————————————————————————————————————————————————————————————————————
+Fj = vari.PCA$rotated.J
+
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Loadings", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google 'pch')
+                              cex = 3, # the size of the dots
+                              text.cex = 3, # the size of the text
+                              col.points = col4BFI, # color of the dots
+                              col.labels = col4BFI, # color for labels of dots
+)
+
+fj.plot.12.rot <- my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+
+grid.arrange(
+  as.grob(fi.WithMeanCI.12.rot), as.grob(fj.plot.12.rot), 
+  ncol = 2,nrow = 1,
+  top = textGrob("Factor Scores and Loadings Components 1 and 2", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+The difference between group means becomes more evenly distributed across the first two components. Thanks to the simplified structure, it is evident that the first two components reflect Openness and Extraversion. Thus, the High memory group is higher than the Low memory group in both Openness and Extraversion.
+
+To showcase the full effect of a varimax rotation, all the factor loadings for the significant components are graphed below.
+
+```{r echo=FALSE}
+#———————————————————————————————————————————————————————————————————————————————————————
+## ROTATED Row Factor Scores Dim 3 4----
+#———————————————————————————————————————————————————————————————————————————————————————
+Fi = vari.PCA$rotated.I
+axis1 = 3
+axis2 = 4
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = vari.PCA$rotated.eigs,
+                                tau = round(vari.PCA$rotated.t),
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "Rotated BFI Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+
+fi.mean.plot <- createFactorMap(fi.mean,
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3,
+                                axis1 = axis1,
+                                axis2 = axis2)
+
+##Bootstrapping group means----------------------------------------------------------------------------
+# Check other parameters you can change for this function
+fi.boot <- Boot4Mean(Fi[,c(axis1,axis2)],
+                     design = memoryGroups,
+                     niter = 1000)
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube, # get the first two components
+                              col = levels(memoryColors),
+                              names.of.factors = paste0("Dimension ", c(axis1, axis2)))
+
+fi.WithMeanCI.34.rot <- my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+
+#-—————————————————————————————————————————————————————————————————————————————————————
+## ROTATED Column Factor Score 3 4----
+#———————————————————————————————————————————————————————————————————————————————————————
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Loadings", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google 'pch')
+                              cex = 3, # the size of the dots
+                              text.cex = 3, # the size of the text
+                              col.points = col4BFI, # color of the dots
+                              col.labels = col4BFI, # color for labels of dots
+)
+
+fj.plot.34.rot <- my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+
+grid.arrange(
+  as.grob(fi.WithMeanCI.34.rot), as.grob(fj.plot.34.rot), 
+  ncol = 2,nrow = 1,
+  top = textGrob("Factor Scores and Loadings Components 3 and 4", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+The plots of components 3 and 4 show that they correspond to Neuroticism and Conscientiousness, respectively. The memory groups do not differ in either of these personality dimensions. 
+
+```{r echo=FALSE}
+#———————————————————————————————————————————————————————————————————————————————————————
+## ROTATED Row Factor Scores Dim 3 4----
+#———————————————————————————————————————————————————————————————————————————————————————
+axis1 = 3
+axis2 = 5
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = vari.PCA$rotated.eigs,
+                                tau = round(vari.PCA$rotated.t),
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "Rotated BFI Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+
+fi.mean.plot <- createFactorMap(fi.mean,
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3,
+                                axis1 = axis1,
+                                axis2 = axis2)
+
+##Bootstrapping group means----------------------------------------------------------------------------
+# Check other parameters you can change for this function
+fi.boot <- Boot4Mean(Fi[,c(axis1,axis2)],
+                     design = memoryGroups,
+                     niter = 1000)
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube, # get the first two components
+                              col = levels(memoryColors),
+                              names.of.factors = paste0("Dimension ", c(axis1, axis2)))
+
+fi.WithMeanCI.35.rot <- my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+
+#-—————————————————————————————————————————————————————————————————————————————————————
+## ROTATED Column Factor Score 3 4----
+#———————————————————————————————————————————————————————————————————————————————————————
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Loadings", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google 'pch')
+                              cex = 3, # the size of the dots
+                              text.cex = 3, # the size of the text
+                              col.points = col4BFI, # color of the dots
+                              col.labels = col4BFI, # color for labels of dots
+)
+
+fj.plot.35.rot <- my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+
+grid.arrange(
+  as.grob(fi.WithMeanCI.35.rot), as.grob(fj.plot.35.rot), 
+  ncol = 2,nrow = 1,
+  top = textGrob("Factor Scores and Loadings Components 3 and 5", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+These plots show components 3 and 5. Component 5 corresponds to Agreeableness and there is no difference between groups here. 
+
+In summary, varimax revealed the underlying psychometric model in the BFI: that there are 5 largely independent factors of personality measured by this questionnaire. 
+
+## Contributions
+Another tool to interpret the components is to calculate contributions. Contributions reflect how important a column (or row) is to the interpretation of an eigenvector/component. The contributions can be calculated for both the rows and the columns by squaring the factor scores for an element and dividing by the eigenvalue in question. Columns (or rows) with a (squared) contribution above the average should be used to interpret a component.  
+\indent Graphing row contributions would be a good way to detect outliers. In this example, however, I only show the contributions for the components. 
+
+```{r echo=FALSE}
+# ROTATED Contributions -----------------------------------------------------------
+Fj = vari.PCA$rotated.J
+ctrJ <- apply(Fj,2,function(x){(x^2)/sum(x^2)})
+signed.ctrJ <- ctrJ * sign(Fj)
+
+#Ctr 1----
+# plot contributions for component 1
+laDim = 1
+ctrJ.1.rot <- PrettyBarPlot2(signed.ctrJ[,laDim],
+                         threshold = 1 / NROW(signed.ctrJ[,laDim]),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ), 1.2*max(signed.ctrJ))
+                         ) + ggtitle(paste0('Component ', laDim))
+#Ctr 2----
+# plot contributions for component 2
+laDim = 2
+ctrJ.2.rot <- PrettyBarPlot2(signed.ctrJ[,laDim],
+                         threshold = 1 / NROW(signed.ctrJ[,laDim]),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ), 1.2*max(signed.ctrJ))
+                         ) + ggtitle(paste0('Component ', laDim))
+
+#Ctr 3----
+laDim = 3
+ctrJ.3.rot <- PrettyBarPlot2(signed.ctrJ[,laDim],
+                         threshold = 1 / NROW(signed.ctrJ[,laDim]),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ), 1.2*max(signed.ctrJ))
+                         ) + ggtitle(paste0('Component ', laDim))
+
+#Ctr 4----
+laDim = 4
+ctrJ.4.rot <- PrettyBarPlot2(signed.ctrJ[,laDim],
+                         threshold = 1 / NROW(signed.ctrJ[,laDim]),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ), 1.2*max(signed.ctrJ))
+                         ) + ggtitle(paste0('Component ', laDim))
+
+#Ctr 5----
+laDim = 5
+ctrJ.5.rot <- PrettyBarPlot2(signed.ctrJ[,laDim],
+                         threshold = 1 / NROW(signed.ctrJ[,laDim]),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ), 1.2*max(signed.ctrJ))
+                         ) + ggtitle(paste0('Component ', laDim))
+
+ctr.all.rot = grid.arrange(
+  as.grob(ctrJ.1.rot), as.grob(ctrJ.2.rot), 
+  as.grob(ctrJ.3.rot), as.grob(ctrJ.4.rot), 
+  as.grob(ctrJ.5.rot), 
+  ncol = 2,nrow = 3,
+  top = textGrob("Contributions barplots", gp = gpar(fontsize = 18, font = 3))
+)
+
+```
+
+The barplots for the contributions shown above confirm what we already concluded from graphing the factor loading. Since contributions are derived from factor loadings (by loadings, it is meant the "scaled" loadings that have been multiplied by the corresponding eigenvalue), it naturally follows that this information is replicated. Graphing contribution does make explicit, however, the threshold for importance and highlights important variables only, making the graph more readable in some cases. 
+
+## Bootstrap Ratios
+In general, a bootstrap ratio is a quantity akin to a t-test, calculated from a bootstrap distribution instead of a theoretical t distribution. In the context of PCA, bootstrap ratios are almost always used to test the stability of the contributions (of the variables or observations).  
+\indent The procedure is simple. Bootstrapping—i.e. running PCA multiple (i.e. 1000) times with different bootstrap samples each time—generates a distribution of contribution values from which we can extract the mean and the standard deviation for each variables. The mean contribution is then divided by its corresponding (mean) standard deviation to produce the bootstrap ration. Bootstrap ratios more extreme than 2 (or -2) reflect that that variable's contribution is statistically significant (p <.05). This threshold of 2 can be modified to account for multiple comparisons. The threshold for this example is equal to 3, corresponding to p < .001.  
+
+The bootstrap ratios shown below confirm the stability of variable contributions. 
+  
+```{r echo=FALSE}
+##ROTATED Bootstrap Ratios----
+BR <- resPCA.inf$Inference.Data$fj.boots$tests$boot.ratios[,1:5] %*% vari.PCA$rotationMatrix
+
+#BR 1----
+laDim <- 1
+BR1.rot <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2.5,
+                            color4bar = gplots::col2hex(col4BFI), # we need hex code
+                            ylab = 'Bootstrap ratios',
+                            ylim = c(1.5*min(BR[,laDim]), 1.5*max(BR[,laDim]))
+                            ) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+#BR 2----
+laDim <- 2
+BR2.rot <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2.5,
+                            color4bar = gplots::col2hex(col4BFI), # we need hex code
+                            ylab = 'Bootstrap ratios',
+                            ylim = c(1.5*min(BR[,laDim]), 1.5*max(BR[,laDim]))
+                            ) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+#BR 3----
+laDim <- 3
+BR3.rot <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2.5,
+                            color4bar = gplots::col2hex(col4BFI), # we need hex code
+                            ylab = 'Bootstrap ratios',
+                            ylim = c(1.5*min(BR[,laDim]), 1.5*max(BR[,laDim]))
+                            ) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+#BR 4----
+laDim <- 4
+BR4.rot <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2.5,
+                            color4bar = gplots::col2hex(col4BFI), # we need hex code
+                            ylab = 'Bootstrap ratios',
+                            ylim = c(1.5*min(BR[,laDim]), 1.5*max(BR[,laDim]))
+                            ) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+
+#BR 5----
+laDim <- 5
+BR5.rot <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2.5,
+                            color4bar = gplots::col2hex(col4BFI), # we need hex code
+                            ylab = 'Bootstrap ratios',
+                            ylim = c(1.5*min(BR[,laDim]), 1.5*max(BR[,laDim]))
+                            ) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+grid.arrange(
+  as.grob(BR1.rot), as.grob(BR2.rot), 
+  as.grob(BR3.rot), as.grob(BR4.rot), 
+  as.grob(BR5.rot), 
+  ncol = 2,nrow = 3,
+  top = textGrob("Bootstrap Ratios", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+## Summary
+
+PCA (with a varimax rotation) was used in this example to reveal the underlying structure in the BFI questionnaire. Results showed that the BFI capture variability in personality across 5 different dimensions: Openness, Extraversion, Neuroticism, Conscientiousness and Agreeableness. Further, High and Low Episodic memory groups showed differences in their levels of Openness and Extraversion.  
+\indent In further analyses, I explore the correlation between memory and these personality dimensions further. 
+
+
+
+
+
+
+
+
+

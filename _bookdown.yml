@@ -1,0 +1,7 @@
+book_filename: "Multivariate-cookbook"
+chapter_name: "Chapter "
+output_dir: docs
+delete_merged_file: true
+rmd_files: ["index.Rmd","01-PCA.Rmd", "02-CA.Rmd", "03-MCA.Rmd", "04-BADA.Rmd", "05-DiCA.Rmd", "06-PLSC.Rmd", "07-MFA.Rmd", "08-DiSTATIS.Rmd"]
+clean: [packages.bib, bookdown.bbl]
+new_session: yes

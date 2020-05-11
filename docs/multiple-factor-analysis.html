@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 8 Multiple Factor Analysis | Advanced Research Methods: Multivariate Analysis Cookbook</title>
+  <meta name="description" content="A recipe card for Multivariate Analysis" />
+  <meta name="generator" content="bookdown 0.18 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 8 Multiple Factor Analysis | Advanced Research Methods: Multivariate Analysis Cookbook" />
+  <meta property="og:type" content="book" />
+  
+  
+  <meta property="og:description" content="A recipe card for Multivariate Analysis" />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 8 Multiple Factor Analysis | Advanced Research Methods: Multivariate Analysis Cookbook" />
+  
+  <meta name="twitter:description" content="A recipe card for Multivariate Analysis" />
+  
+
+<meta name="author" content="Virgilio Gonzenbach" />
+
+
+<meta name="date" content="2019-12-15" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="partial-least-squares-correlation.html"/>
+<link rel="next" href="distatis.html"/>
+<script src="libs/header-attrs-2.1/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">RM# Cookbook</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Introduction</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="index.html"><a href="index.html#analysis-of-psychometric-questionnaires"><i class="fa fa-check"></i><b>1.1</b> Analysis of psychometric questionnaires</a></li>
+<li class="chapter" data-level="1.2" data-path="index.html"><a href="index.html#transdiagnostic-or-multi-population-studies"><i class="fa fa-check"></i><b>1.2</b> Transdiagnostic or multi-population studies</a></li>
+<li class="chapter" data-level="1.3" data-path="index.html"><a href="index.html#neuroimaging-analysis"><i class="fa fa-check"></i><b>1.3</b> Neuroimaging analysis</a></li>
+<li class="chapter" data-level="1.4" data-path="index.html"><a href="index.html#further-reading"><i class="fa fa-check"></i><b>1.4</b> Further reading</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html"><i class="fa fa-check"></i><b>2</b> Principal Component Analysis</a>
+<ul>
+<li class="chapter" data-level="2.0.1" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#criteria-for-principal-components"><i class="fa fa-check"></i><b>2.0.1</b> Criteria for principal components</a></li>
+<li class="chapter" data-level="2.1" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#the-data"><i class="fa fa-check"></i><b>2.1</b> The Data</a></li>
+<li class="chapter" data-level="2.2" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#correlation-matrix"><i class="fa fa-check"></i><b>2.2</b> Correlation Matrix</a></li>
+<li class="chapter" data-level="2.3" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#running-pca"><i class="fa fa-check"></i><b>2.3</b> Running PCA</a></li>
+<li class="chapter" data-level="2.4" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#scree-plot"><i class="fa fa-check"></i><b>2.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="2.5" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#row-factor-scores"><i class="fa fa-check"></i><b>2.5</b> (Row) Factor Scores</a></li>
+<li class="chapter" data-level="2.6" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#tolerance-intervals"><i class="fa fa-check"></i><b>2.6</b> Tolerance Intervals</a></li>
+<li class="chapter" data-level="2.7" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#confidence-intervals"><i class="fa fa-check"></i><b>2.7</b> Confidence Intervals</a></li>
+<li class="chapter" data-level="2.8" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#column-factor-loadings"><i class="fa fa-check"></i><b>2.8</b> (Column) Factor loadings</a></li>
+<li class="chapter" data-level="2.9" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#factor-rotations-varimax"><i class="fa fa-check"></i><b>2.9</b> Factor Rotations (Varimax)</a>
+<ul>
+<li class="chapter" data-level="2.9.1" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#running-varimax"><i class="fa fa-check"></i><b>2.9.1</b> Running varimax</a></li>
+<li class="chapter" data-level="2.9.2" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#the-effect-of-varimax"><i class="fa fa-check"></i><b>2.9.2</b> The effect of varimax</a></li>
+</ul></li>
+<li class="chapter" data-level="2.10" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#contributions"><i class="fa fa-check"></i><b>2.10</b> Contributions</a></li>
+<li class="chapter" data-level="2.11" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#bootstrap-ratios"><i class="fa fa-check"></i><b>2.11</b> Bootstrap Ratios</a></li>
+<li class="chapter" data-level="2.12" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#summary"><i class="fa fa-check"></i><b>2.12</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html"><i class="fa fa-check"></i><b>3</b> Correspondence Analysis</a>
+<ul>
+<li class="chapter" data-level="3.0.1" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#masses-and-weights"><i class="fa fa-check"></i><b>3.0.1</b> Masses and Weights</a></li>
+<li class="chapter" data-level="3.0.2" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#two-kinds-of-factor-scores"><i class="fa fa-check"></i><b>3.0.2</b> Two kinds of factor scores</a></li>
+<li class="chapter" data-level="3.1" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#data"><i class="fa fa-check"></i><b>3.1</b> Data</a></li>
+<li class="chapter" data-level="3.2" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#the-contingency-table-transformed-table-of-deviations."><i class="fa fa-check"></i><b>3.2</b> The contingency table transformed: table of deviations.</a></li>
+<li class="chapter" data-level="3.3" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#running-ca"><i class="fa fa-check"></i><b>3.3</b> Running CA</a></li>
+<li class="chapter" data-level="3.4" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#scree-plot-1"><i class="fa fa-check"></i><b>3.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="3.5" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#asymmetric-plot"><i class="fa fa-check"></i><b>3.5</b> Asymmetric plot</a></li>
+<li class="chapter" data-level="3.6" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#symmetric-plot-with-cdc"><i class="fa fa-check"></i><b>3.6</b> Symmetric Plot with CDC</a></li>
+<li class="chapter" data-level="3.7" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#symmetric-plot-with-data-from-2004"><i class="fa fa-check"></i><b>3.7</b> Symmetric Plot with data from 2004</a></li>
+<li class="chapter" data-level="3.8" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#contributions-1"><i class="fa fa-check"></i><b>3.8</b> Contributions</a></li>
+<li class="chapter" data-level="3.9" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#bootstrap-ratios-1"><i class="fa fa-check"></i><b>3.9</b> Bootstrap ratios</a></li>
+<li class="chapter" data-level="3.10" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#summary-1"><i class="fa fa-check"></i><b>3.10</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html"><i class="fa fa-check"></i><b>4</b> Multiple Correspondence Analysis</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#the-data-1"><i class="fa fa-check"></i><b>4.1</b> The Data</a></li>
+<li class="chapter" data-level="4.2" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#correlation-matrix-for-recoded-data"><i class="fa fa-check"></i><b>4.2</b> Correlation Matrix for Recoded Data</a></li>
+<li class="chapter" data-level="4.3" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#running-mca"><i class="fa fa-check"></i><b>4.3</b> Running MCA</a></li>
+<li class="chapter" data-level="4.4" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#scree-plot-2"><i class="fa fa-check"></i><b>4.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="4.5" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#row-factor-scores-1"><i class="fa fa-check"></i><b>4.5</b> (Row) Factor Scores</a></li>
+<li class="chapter" data-level="4.6" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#column-factor-scores"><i class="fa fa-check"></i><b>4.6</b> Column Factor Scores</a></li>
+<li class="chapter" data-level="4.7" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#rotation"><i class="fa fa-check"></i><b>4.7</b> Rotation</a>
+<ul>
+<li class="chapter" data-level="4.7.1" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#dimension-1-and-2"><i class="fa fa-check"></i><b>4.7.1</b> Dimension 1 and 2</a></li>
+<li class="chapter" data-level="4.7.2" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#dimension-3-and-4"><i class="fa fa-check"></i><b>4.7.2</b> Dimension 3 and 4</a></li>
+<li class="chapter" data-level="4.7.3" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#dimension-5-and-6"><i class="fa fa-check"></i><b>4.7.3</b> Dimension 5 and 6</a></li>
+<li class="chapter" data-level="4.7.4" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#dimension-6-and-7"><i class="fa fa-check"></i><b>4.7.4</b> Dimension 6 and 7</a></li>
+</ul></li>
+<li class="chapter" data-level="4.8" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#contributions-2"><i class="fa fa-check"></i><b>4.8</b> Contributions</a></li>
+<li class="chapter" data-level="4.9" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#bootstrap-ratios-2"><i class="fa fa-check"></i><b>4.9</b> Bootstrap Ratios</a></li>
+<li class="chapter" data-level="4.10" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#summary-2"><i class="fa fa-check"></i><b>4.10</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html"><i class="fa fa-check"></i><b>5</b> Barycentric Discriminant Analysis</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#the-data-2"><i class="fa fa-check"></i><b>5.1</b> The Data</a></li>
+<li class="chapter" data-level="5.2" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#group-by-variables-matrix"><i class="fa fa-check"></i><b>5.2</b> Group by Variables Matrix</a></li>
+<li class="chapter" data-level="5.3" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#running-bada"><i class="fa fa-check"></i><b>5.3</b> Running BADA</a></li>
+<li class="chapter" data-level="5.4" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#scree-plot-3"><i class="fa fa-check"></i><b>5.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="5.5" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#factor-scores"><i class="fa fa-check"></i><b>5.5</b> Factor Scores</a></li>
+<li class="chapter" data-level="5.6" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#contributions-3"><i class="fa fa-check"></i><b>5.6</b> Contributions</a></li>
+<li class="chapter" data-level="5.7" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#bootstrap-ratios-3"><i class="fa fa-check"></i><b>5.7</b> Bootstrap Ratios</a></li>
+<li class="chapter" data-level="5.8" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#classification-confusion-matrices"><i class="fa fa-check"></i><b>5.8</b> Classification: Confusion matrices</a></li>
+<li class="chapter" data-level="5.9" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#summary-3"><i class="fa fa-check"></i><b>5.9</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html"><i class="fa fa-check"></i><b>6</b> Discriminant Correspondence Analysis</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#the-data-3"><i class="fa fa-check"></i><b>6.1</b> The Data</a></li>
+<li class="chapter" data-level="6.2" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#running-dica"><i class="fa fa-check"></i><b>6.2</b> Running DiCA</a></li>
+<li class="chapter" data-level="6.3" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#scree-plot-4"><i class="fa fa-check"></i><b>6.3</b> Scree Plot</a></li>
+<li class="chapter" data-level="6.4" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#factor-scores-1"><i class="fa fa-check"></i><b>6.4</b> Factor Scores</a></li>
+<li class="chapter" data-level="6.5" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#contributions-4"><i class="fa fa-check"></i><b>6.5</b> Contributions</a></li>
+<li class="chapter" data-level="6.6" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#bootstrap-ratios-4"><i class="fa fa-check"></i><b>6.6</b> Bootstrap Ratios</a></li>
+<li class="chapter" data-level="6.7" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#fixed-effect-classification"><i class="fa fa-check"></i><b>6.7</b> Fixed-Effect Classification</a></li>
+<li class="chapter" data-level="6.8" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#random-effect-classification"><i class="fa fa-check"></i><b>6.8</b> Random-Effect Classification</a></li>
+<li class="chapter" data-level="6.9" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#summary-4"><i class="fa fa-check"></i><b>6.9</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html"><i class="fa fa-check"></i><b>7</b> Partial Least Squares Correlation</a>
+<ul>
+<li class="chapter" data-level="7.0.1" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#saliences"><i class="fa fa-check"></i><b>7.0.1</b> Saliences</a></li>
+<li class="chapter" data-level="7.0.2" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#latent-variables"><i class="fa fa-check"></i><b>7.0.2</b> Latent Variables</a></li>
+<li class="chapter" data-level="7.1" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#the-data-4"><i class="fa fa-check"></i><b>7.1</b> The Data</a></li>
+<li class="chapter" data-level="7.2" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#correlation-matrix-1"><i class="fa fa-check"></i><b>7.2</b> Correlation Matrix</a></li>
+<li class="chapter" data-level="7.3" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#running-plsc"><i class="fa fa-check"></i><b>7.3</b> Running PLSC</a></li>
+<li class="chapter" data-level="7.4" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#scree-plot-5"><i class="fa fa-check"></i><b>7.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="7.5" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#visualizing-latent-variables"><i class="fa fa-check"></i><b>7.5</b> Visualizing Latent Variables</a></li>
+<li class="chapter" data-level="7.6" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#visualizing-saliences"><i class="fa fa-check"></i><b>7.6</b> Visualizing Saliences</a></li>
+<li class="chapter" data-level="7.7" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#contributions-5"><i class="fa fa-check"></i><b>7.7</b> Contributions</a></li>
+<li class="chapter" data-level="7.8" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#bootstrap-ratios-5"><i class="fa fa-check"></i><b>7.8</b> Bootstrap ratios</a></li>
+<li class="chapter" data-level="7.9" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#summary-5"><i class="fa fa-check"></i><b>7.9</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html"><i class="fa fa-check"></i><b>8</b> Multiple Factor Analysis</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#data-1"><i class="fa fa-check"></i><b>8.1</b> Data</a></li>
+<li class="chapter" data-level="8.2" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#correlation-matrix-2"><i class="fa fa-check"></i><b>8.2</b> Correlation Matrix</a></li>
+<li class="chapter" data-level="8.3" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#scree-plot-6"><i class="fa fa-check"></i><b>8.3</b> Scree Plot</a></li>
+<li class="chapter" data-level="8.4" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#factor-scores-2"><i class="fa fa-check"></i><b>8.4</b> Factor Scores</a></li>
+<li class="chapter" data-level="8.5" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#factor-loadings"><i class="fa fa-check"></i><b>8.5</b> Factor loadings</a></li>
+<li class="chapter" data-level="8.6" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#partial-factor-scores"><i class="fa fa-check"></i><b>8.6</b> Partial Factor Scores</a></li>
+<li class="chapter" data-level="8.7" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#contributions-6"><i class="fa fa-check"></i><b>8.7</b> Contributions</a></li>
+<li class="chapter" data-level="8.8" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#summary-6"><i class="fa fa-check"></i><b>8.8</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="distatis.html"><a href="distatis.html"><i class="fa fa-check"></i><b>9</b> DiSTATIS</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="distatis.html"><a href="distatis.html#the-data-5"><i class="fa fa-check"></i><b>9.1</b> The Data</a></li>
+<li class="chapter" data-level="9.2" data-path="distatis.html"><a href="distatis.html#running-distatis"><i class="fa fa-check"></i><b>9.2</b> Running DiSTATIS</a></li>
+<li class="chapter" data-level="9.3" data-path="distatis.html"><a href="distatis.html#screeplot-rv-matrix"><i class="fa fa-check"></i><b>9.3</b> ScreePlot Rv Matrix</a></li>
+<li class="chapter" data-level="9.4" data-path="distatis.html"><a href="distatis.html#the-rv-map"><i class="fa fa-check"></i><b>9.4</b> The Rv-map</a></li>
+<li class="chapter" data-level="9.5" data-path="distatis.html"><a href="distatis.html#compromise-factor-scores"><i class="fa fa-check"></i><b>9.5</b> Compromise factor scores</a></li>
+<li class="chapter" data-level="9.6" data-path="distatis.html"><a href="distatis.html#projecting-descriptors"><i class="fa fa-check"></i><b>9.6</b> Projecting descriptors</a></li>
+<li class="chapter" data-level="9.7" data-path="distatis.html"><a href="distatis.html#summary-7"><i class="fa fa-check"></i><b>9.7</b> Summary</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Advanced Research Methods: Multivariate Analysis Cookbook</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="multiple-factor-analysis" class="section level1" number="8">
+<h1><span class="header-section-number">Chapter 8</span> Multiple Factor Analysis</h1>
+<p>Multiple Factor Analysis is a multi-table adaptation of PCA. Similar to PCA, MFA summarizes a matrix by performing its singular value decomposition. However, to prevent a single table from dominating the overall decomposition—which happens when one of the tables has a higher inertia than the others—MFA equalizes the contributions from the multiple tables. This equalization amount to performing a “preliminary” PCA separately on each table and then dividing them by their own first singular value. Dividing by the first singular value (i.e. the square root of the eigen-value; a quantity akin to standard deviation) amounts to scaling each table so that it can be compared against the others—analagous to a Z-score standardization but for tables instead of individual variables. An equivalent procedure is to carry out a generalized singular value decomposition of the grand matrix by weighting each column by a quantity known as alpha—the inverse of the first squared singular value for a given table— all columns of a given table share the same weight.<br />
+In this example, I use MFA to analyze three tables that describe the same observations but different variables. Nevertheless, MFA can be used to analyze different measurements at different timepoints as long as the observations remain the same; dual-MFA is a variation where the same variables can be analyzed on different populations.</p>
+<div id="data-1" class="section level2" number="8.1">
+<h2><span class="header-section-number">8.1</span> Data</h2>
+<p>The three tables used in this analysis are the BFI, SAM and OSIQ. The OSIQ, short for Object-Spatial Imagery Questionnaire, is a self-report questionnaire that captures individual preferences in visualizing. Object imagery is the tendency to visualize through colors, shapes, size and other specific visual qualities of objects; Spatial imagery is the tendency to “visualize” abstract representations of relationship and relative positions between objects and concepts.</p>
+<pre><code>##    ID s01 s02 s03 o04 s05 s06 o07
+## 1 164   4   3   3   4   2   1   4
+## 2 220   2   4   2   4   2   4   4
+## 3 222   5   5   1   2   5   1   1
+## 4 444   4   4   2   2   5   5   5</code></pre>
+<p>Object imagery items are marked with an “o”, while spatial imagery items are marked with “s”.</p>
+</div>
+<div id="correlation-matrix-2" class="section level2" number="8.2">
+<h2><span class="header-section-number">8.2</span> Correlation Matrix</h2>
+<p>After the scaling procedure described above—where each table is divided by its first singular value—MFA amounts to a PCA of the concatenated tables. [Recall that this, in turn, amounts to the SVD of the data table, or the eigen decomposition of the correlation/covariance matrix.]<br />
+Below, the correlation matrix between tables is displayed, with lines separating the tables for ease of interpretation.</p>
+<p><img src="07-MFA_files/figure-html/corr-1.png" width="672" /></p>
+<p>In the third column, the correlation matrix reveals that spatial and object imagery have dissociable correlation patterns: correlations with object imagery are strongest with Extraversion, Openness and Episodic Memory and Future Prospection. In particular, the strongest inter-table correlations are between the OSIQ and the SAM, therefore we can predict that variables in these table will largely contribute to the first component.</p>
+<p>##Running MFA
+MFA is executed with the ‘mpMFA’ function from the MExPosition package. The function takes the concatenated raw data tables as one matrix or data frame, and it also requires a vector that indexes which columns belong to which table.</p>
+</div>
+<div id="scree-plot-6" class="section level2" number="8.3">
+<h2><span class="header-section-number">8.3</span> Scree Plot</h2>
+<p>The scree plot below reveals one component that captures a lot of variance (20%) relative to the other components. In total, there may be somewhere between 6 and 7 significant components, as indicated by the elbow test. This document only displays graphical representations for Dimensions 1 and 2 (refer to the source file for graphs of remaining dimensions and their rotated equivalents).</p>
+</div>
+<div id="factor-scores-2" class="section level2" number="8.4">
+<h2><span class="header-section-number">8.4</span> Factor Scores</h2>
+<p>Just like in PCA, factor scores in MFA represent the projection of observations (data point) onto a component (axis). Unlike PCA, however, MFA produces two sets of factor scores: compromise factor scores and partial factor scores. Compromise factor scores are derived from a weighted averaging of partial factor scores that takes into account the alpha of each table. The partial factor scores, on the other hand, correspond to a projection of each table onto its corresponding table of loadings (Q).</p>
+<p><img src="07-MFA_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>The tolerance intervals in the above graph show that groups moderately overlap. The mean of each group displayed here corresponds to the average compromise factor scores for that group.</p>
+<p><img src="07-MFA_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>This graph shows that means of high and low episodic memory groups significantly differ on component 1 and to a lesser extent on component 2. This is signaled by the non-overlapping of bootstrapped confidence intervals (ellipses).</p>
+<p>To understand what drives these group differences, we may interpret the diagonal line separating group means as resulting from variation along a set of (linear combinations of) variables. Graphing factor loadings will reveal which variables correlate highly with this diagonal.</p>
+</div>
+<div id="factor-loadings" class="section level2" number="8.5">
+<h2><span class="header-section-number">8.5</span> Factor loadings</h2>
+<p>As in PCA, factor loadings in MFA can be calculated by multiplying the matrix Q (the angles between variables and components) by the diagonal matrix of singular values (i.e. scaling factors corresponding to the variance on each dimension). Graphing the resulting matrix provides us with a visual representation of: (1) the correlation between variables, interpreted as the angle between variable vectors (which always cross the origin); (2) the correlation between variables and components, interpreted as the angle between a variable vector and an axis; and (3) the contribution of a variable to a component, interpreted as the projection of the variable vector onto an axis; (4) the relative inertia explained by each component and its associated variables, interpreted as the length of each axis and the distance between variable vectors and the origin.</p>
+<p><img src="07-MFA_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>In this graph, we can appreciate that the first component is dominated by SAM and OSIQ variables, while the second component reflects BFI items. However, a richer interpretation can be arrived at by considering the two components together. We can see that the end of a lot of variable vectors (i.e. the points) agglomerate somewhere around (x = -0.02, y = -0.005). Thus the diagonal crossing this point (approximately) and the origin, is an important feature of this component-solution.<br />
+Incidentally, this diagonal corresponds with the diagonal between group means, to an extent. Thus, we may interpret differences between group means in part due to Episodic Memory, Future Prospection and Object Imagery. However, other variables are likely at play since the diagonal line projected onto the group means has a slightly different angle; projected outward that diagonal would cross the point at x = -0.02, y = -0.0025. This suggests a contribution from some of the BFI items such as Openness and perhaps Extraversion. We may confirm this interpretation by graphing variable contributions.</p>
+</div>
+<div id="partial-factor-scores" class="section level2" number="8.6">
+<h2><span class="header-section-number">8.6</span> Partial Factor Scores</h2>
+<p>A unique feature of MFA (and other multi-table techniques) is the inclusion of partial factor scores. When MFA is used to analyze multiple tables, partial scores can be used to display how each of the tables differ from “the average view” in how they describe observations or groups. This is achieved by projecting each table separately onto the eigen-vector space. The graphical result corresponds to a “weighting” such that the distance from the (multi-table) barycenter varies per table.<br />
+The graph below shows the partial factor scores for the BFI, SAM and OSIQ.</p>
+<p><img src="07-MFA_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Tables differ in how they represent the groups. SAM and OSIQ are mostly in agreement and better differentiate between groups by pulling the means apart. BFI, however, displays a central tendency, which contrasts with the other tables. This suggests that excluding the BFI would lead to higher group discrimination: for example, a BADA (or MUBADA) with either (or both) of these two tables would lead to higher classification accuracy than the BFI. Thus, MFA results here suggest further implementations and analyses.</p>
+</div>
+<div id="contributions-6" class="section level2" number="8.7">
+<h2><span class="header-section-number">8.7</span> Contributions</h2>
+<p>The barplots below show contributions for Components 1 and 2 separately.
+<img src="07-MFA_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>As predicted, major contributions for Component 1 include Episodic Memory, Future Prospection and Object Imagery items, together with a relatively smaller contribution from Openness items.</p>
+</div>
+<div id="summary-6" class="section level2" number="8.8">
+<h2><span class="header-section-number">8.8</span> Summary</h2>
+<p>MFA allows for the examination of multiple data tables at the same time by revealing the overall correlation patterns between their variables. If factorial designs are part of the experiment, MFA may be used to analyze group differences by bootstrapping confidence intervals.<br />
+The present analyses showed that one dimension—composed of memory, imagery and openness items—accounts for a relatively high proportion of variance in the current experimental design. Openness is moderately correlated to Episodic Memory and Future Prospection relative to Object Imagery, whose correlation with memory items is the strongest in the whole correlation matrix.</p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="partial-least-squares-correlation.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="distatis.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": null,
+"text": null
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>

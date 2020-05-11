@@ -1,0 +1,340 @@
+---
+title: "Multiple Factor Analysis"
+author: "Virgilio Gonzenbach"
+date: "12/5/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+library(ExPosition)
+library(InPosition)
+library(MExPosition)
+library(tidyverse)
+library(data4PCCAR)
+library(PTCA4CATA)
+library(grDevices)
+library(corrplot)
+library(devtools)
+library(ggplotify)
+library(gridExtra)
+library(officer)
+library(grid)
+library(abind)
+
+#Read Data----
+#Big Five Inventory
+BFI = read.csv('../DATA/BFIdata.csv')
+bfi.quant = BFI[BFI$Active == TRUE,6:49]
+
+#Survey of Autobiographical Memory
+SAM = read.csv("../DATA/SAMdata.csv")
+sam.quant = SAM[SAM$Active == TRUE, 6:ncol(SAM)]
+
+#Object and Spatial Imagery Questionnaire
+OSIQ = read.csv("../DATA/OSIQdata.csv")
+osiq.quant = OSIQ[OSIQ$Active == TRUE, 6:ncol(OSIQ)]
+
+##Create vector of color names for each table for graphing
+#color4BFI---- 
+Ex = grep("Ex", colnames(bfi.quant)) #indexing vector for each variables
+Ag = grep("Ag", colnames(bfi.quant))
+Co = grep("Co", colnames(bfi.quant))
+Ne = grep("Ne", colnames(bfi.quant))
+Op = grep("Op", colnames(bfi.quant))
+
+col4BFI = c(rep("firebrick2", length(Ex)), #reproduce each color times the # of items
+            rep("darkolivegreen3", length(Ag)),
+            rep("dodgerblue2", length(Co)),
+            rep("mediumpurple3", length(Ne)),
+            rep("goldenrod1", length(Op)))
+
+#color for SAM----
+E = grep("^E.", colnames(sam.quant))
+S = grep("^S.", colnames(sam.quant))
+P = grep("^P.", colnames(sam.quant))
+F = grep("^F", colnames(sam.quant))
+
+col4SAM = c(rep("indianred1", length(E)),
+            rep("lightcyan2", length(S)),
+            rep("lightpink1", length(P)),
+            rep("lightsteelblue1", length(F)))
+
+#color for OSIQ----
+S = grep("^s.", colnames(osiq.quant))
+O = grep("^o.", colnames(osiq.quant))
+
+col4OSIQ = c(rep("darkviolet", length(S)), 
+             rep("deeppink", length(O)))
+
+osiq.quant = osiq.quant[,c(S,O)] #reorder columns for easy interpretation of correlation plot
+
+col4all = c(col4BFI, col4SAM, col4OSIQ)
+##Vector of colors for observations according to groups
+#memoryColors----
+memoryGroups = droplevels(BFI$memoryGroups[BFI$Active == TRUE]) #use only two biggest         groups
+memoryColors = recode(memoryGroups, High = 'dodgerblue3', Low = 'brown3')
+
+
+#Index Column to Table----
+col.index = c(rep("BFI", ncol(bfi.quant)),
+  rep("SAM", ncol(sam.quant)),
+  rep("OSIQ", ncol(osiq.quant)))
+col.index = col.index  %>% as.factor()   
+col.index = t(data.frame(col.index))
+```
+
+### Multiple Factor Analysis (MFA)
+
+Multiple Factor Analysis is a multi-table adaptation of PCA. Similar to PCA, MFA summarizes a covariance or correlation matrix through its singular value decomposition. However, to prevent a single table from dominating the overall decomposition—which happens when one of the tables has a higher inertia than the others—MFA equalizes the contributions from the multiple tables by running a "preliminary" PCA on each table separately, and then dividing tables by their own first singular value. Dividing each table by its first singular value (i.e. a measure of inertia, or variance) amounts to scaling each table so that it can be compared against the others, analagous to a Z-score standardization but for tables instead of individual variables. An equivalent procedure to dividing each table by its first singular value and then concatening them is to carry out a generalized singular value decomposition  of the grand matrix by weighting each column by a quantity known as alpha—the inverse of the first squared singular value for a given table. (In this version, all columns of a given table have the same weight.)  
+
+In this example, we use MFA to analyze three tables that describe the same observations at one single timepoint. Nevertheless, MFA can be used to analyze different measurements at different timepoints as long as the observations remain the same; dual-MFA is a variation where the same variables can be analyzed on different populations. 
+
+## Data
+The three tables used in this analysis are the BFI, SAM and OSIQ. The BFI and the SAM have been used previously for other analyses in this cookbook; the OSIQ is new data for this analysis. The OSIQ, short for Object-Spatial Imagery Questionnaire, is a psychometric tool that captures individual preferences in visualizing. Object imagery is the tendency to visualize through colors, shapes, size and other specific visual qualities of objects; Spatial imagery is the tendency to "visualize" abstract representations of relationship and relative positions between objects and concepts. 
+
+```{r data, include=TRUE}
+head(OSIQ[c(1,6:12)],4)
+```
+
+Object imagery items  are marked with an "o", while spatial imagery items are marked with "s".
+
+## Correlation Matrix
+After the scaling procedure described above—where each table is divided by its first singular value—MFA amounts to a PCA of the concatenated tables. Recall that this, in turn, amounts to the SVD of the data table, or the eigen decomposition of the correlation/covariance matrix.
+
+Below, the correlation matrix between tables is displayed, with lines separating the tables for ease of interpretation. 
+
+
+```{r corr, include=TRUE}
+data = cbind(bfi.quant, sam.quant, osiq.quant)
+
+#loading the correlation matrix which was saved with recordPlot()
+#for details see original source code
+cor = readRDS("cor.Rds")
+cor
+```
+
+In the third column, the correlation matrix reveals that spatial and object imagery have dissociable correlation patterns: correlations with object imagery are strongest with Extraversion, Openness and Episodic Memory and Future Prospection. In particular, the strongest inter-table correlations are between the OSIQ and the SAM, therefore we can predict that variables in these table will largely contribute to the first component. 
+
+##Running MFA
+MFA is executed with the 'mpMFA' function from the MExPosition package. The function takes the concatenated raw data tables as one matrix or data frame, and a vector that indexes which columns belong to which table.
+```{r MFA, echo=TRUE, include=FALSE}
+resMFA = mpMFA(data, col.index,
+      DESIGN = memoryGroups,
+      graphs = FALSE)
+```
+
+##Scree Plot
+The scree plot below reveals one component that captures a lot of variance (20%) relative to the other components. In total, there may be somewhere between 6 and 7 significant components, as indicated by the elbow test. This document only displays graphical representations for Dimensions 1 and 2 (refer to the Rmarkdown for other graphs of remaining dimensions and their rotated equivalents).
+```{r include=FALSE}
+PlotScree(ev = resMFA$mexPosition.Data$Table$eigs,
+          plotKaiser = FALSE)
+```
+
+## Factor Scores
+Just like in PCA, factor scores in MFA represent the projection of observations (data point) onto a component (axis). Unlike PCA, however, MFA produces two sets of factor scores: compromise factor scores and partial factor scores. 
+  Compromise factor scores are derived from a weighted averaging of partial factor scores that takes into account the alpha of each table. 
+  The partial factor scores, on the other hand, correspond to a projection of each table onto its corresponding table of loadings (Q). 
+
+```{r include=TRUE}
+#Row Factor Scores----
+#Fi Plot 12
+Fi = resMFA$mexPosition.Data$Table$fi
+
+axis1 = 1
+axis2 = 2
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = resMFA$mexPosition.Data$Table$eigs[1:2],
+                                tau = round(resMFA$mexPosition.Data$Table$t, 2),
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "BFI-SAM-OSIQ Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+group.mean <- aggregate(Fi,
+                        by = list(memoryGroups), # must be a list
+                        mean)
+
+# need to format the results from `aggregate` correctly
+rownames(group.mean) <- group.mean[,1] # Use the first column as row names
+fi.mean <- group.mean[,-1] # Exclude the first column
+
+
+fi.mean.plot <- createFactorMap(fi.mean,
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                axis1 = axis1,
+                                axis2 = axis2,
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3)
+fi.WithMean <- my.fi.plot$zeMap_background + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+
+## Tolerance Intervals------------------------------------------------------------------------
+TIplot <- MakeToleranceIntervals(Fi[,c(axis1,axis2)],
+                                 design = memoryGroups,
+                                 # line below is needed
+                                 names.of.factors =  c("Dim1","Dim2"), # needed 
+                                 col = levels(memoryColors),
+                                 line.size = .50, 
+                                 line.type = 3,
+                                 alpha.ellipse = .2,
+                                 alpha.line    = .4,
+                                 p.level       = .95)
+
+
+my.fi.plot$zeMap_background + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + TIplot + fi.labels
+
+```
+
+The tolerance intervals in the above graph show that groups moderately overlap. The mean of each group displayed here corresponds to the average compromise factor scores for that group. 
+
+
+```{r include=TRUE}
+##Bootstrapping group means----------------------------------------------------------------------------
+# Depend on the size of your data, this might take a while
+fi.boot <- Boot4Mean(Fi[,c(axis1,axis2)],
+                     design = memoryGroups,
+                     niter = 1000)
+
+# Check other parameters you can change for this function
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube, # get the first two components
+                              col = levels(memoryColors),
+                              #axis1 = axis1,
+                              #axis2 = axis2
+                              names.of.factors = paste0("Dimension ", c(axis1, axis2))
+                              )
+
+my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+```
+
+This graph shows that means of high and low episodic memory groups significantly differ on component 1 and to a lesser extent on component 2. This is signaled by the non-overlapping of bootstrapped confidence intervals (ellipses).
+
+To understand what drives these group differences, we may interpret the diagonal between groups means as resulting from variation along a set of (linear combinations of) variables. Graphing factor loadings will reveal which variables correlate highly with this diagonal.
+
+## Factor loadings
+As in PCA, factor loadings in MFA can be calculated by multiplying the matrix Q (the angles between variables and components) by the diagonal matrix of singular values (i.e. scaling factors corresponding to the variance on each dimension). Graphing the resulting matrix provides us with a visual representation of: (1) the correlation between variables, interpreted as the angle between variable vectors (which always cross the origin); (2) the correlation between variables and components, interpreted as the angle between a variable vector and an axis; and (3) the contribution of a variable to a component, interpreted as the projection of the variable vector onto an axis; (4) the relative inertia explained by each component and its associated variables, interpreted as the length of each axis and the distance between variable vectors and the origin.  
+
+```{r include=TRUE}
+# ——————————————————————————————————————————————————————————————————————————————————————
+## Fj Plots-----------------------------------------------------------------------
+# ——————————————————————————————————————————————————————————————————————————————————————
+# factor loadings are calculated by multiplying Q by the singular values (square root of eigenvalue)
+Fj = resMFA$mexPosition.Data$Table$Q %*% diag(sqrt(resMFA$mexPosition.Data$Table$eigs)) 
+
+#Fj plot 12----
+axis1 = 1
+axis2 = 2
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = resMFA$mexPosition.Data$Table$eigs,
+                                tau = round(resMFA$mexPosition.Data$Table$t, 2),
+                                axisName = "Component ")
+
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 3, # the size of the dots
+                              text.cex = 2, # the size of the text
+                              col.points = col4all, # color of the dots
+                              col.labels = col4all, # color for labels of dots
+)
+
+my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+```
+
+In this graph, we can appreciate that the first component is dominated by SAM and OSIQ variables, while the second component reflects BFI items. However, a richer interpretation can be arrived at by considering the two components together. We can see that the end of a lot of variable vectors (i.e. the points) agglomerate somewhere around (x = -0.02, y = -0.005). Thus the diagonal crossing this point (approximately) and the origin, is an important feature of this component-solution. Incidentally, this diagonal corresponds to a high degree with the diagonal between group means. Thus, we may interpret differences between group means in part due to Episodic Memory, Future Prospection and Object Imagery. However, other variables are likely at play since the diagonal line projected onto the group means has a slightly different angle (projected outward that diagonal would cross the point at x = -0.02, y = -0.0025). This suggests a contribution from some of the BFI items such as Openness and perhaps Extraversion. We may confirm this interpretation by graphing variable contributions. 
+
+##Partial Factor Scores
+A unique feature of MFA (and other multi-table techniques) is the inclusion of partial factor scores, which correspond to the projection of elements that formed part of the analysis but in the aggregate. When MFA is used to analyze multiple tables, partial scores can be used to display how each of the tables differ from "the average view" in how they describe observations or groups. This is achieved by projecting each table separately onto the eigen-vector space. The graphical result corresponds to a "weighting" such that the distance from the (multi-table) barycenter varies per table.
+ The graph below shows the partial factor scores for the BFI, SAM and OSIQ.
+
+```{r include=TRUE}
+#Partial Factor Score----
+grpmeanI.1 <- getMeans(resMFA$mexPosition.Data$Table$partial.fi.array[,,1], memoryGroups)
+grpmeanI.2 <- getMeans(resMFA$mexPosition.Data$Table$partial.fi.array[,,2], memoryGroups)
+grpmeanI.3 <- getMeans(resMFA$mexPosition.Data$Table$partial.fi.array[,,3], memoryGroups)
+
+partial.means <- abind(grpmeanI.1,
+                       grpmeanI.2,
+                       grpmeanI.3,
+                       along = 3)
+dimnames(partial.means)[[2]] = paste0("Dimension ", 1:ncol(partial.means))
+
+PF <- createPartialFactorScoresMap(
+  factorScores = fi.mean,
+  partialFactorScores = partial.means,
+  axis1 = 1, axis2 = 2,
+  colors4Items = as.vector(col4all), 
+  colors4Blocks = c("firebrick2", "lightsteelblue4", "deeppink"),
+  names4Partial = c("BFI", "SAM", "OSIQ"), # 
+  font.labels = 'bold',
+)
+
+my.fi.plot$zeMap_background + 
+  fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels +
+  PF$pointsColByBlocks + PF$labelsColByBlocks + 
+  PF$linesColByBlocks
+
+```
+
+Tables differ in how they represent the groups. SAM and OSIQ are mostly in agreement and better differentiate between groups by pulling the means apart. BFI, however, displays a central tendency which contrasts with the other tables. This suggests that excluding the BFI would lead to higher group discrimination: for example, a BADA (or MUBADA) with either (or both) of these two tables would lead to high classification accuracy. Thus, MFA results here suggest further implementations and analyses.
+
+## Contributions 
+
+The barplots below show contributions for Components 1 and 2 separately. 
+```{r include=TRUE}
+#————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+#Contributions----
+#————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+ctrJ = resMFA$mexPosition.Data$Table$cj
+signed.ctrJ = ctrJ * sign(resMFA$mexPosition.Data$Table$Q)
+
+#Ctr1----
+dim = 1
+ctrJ.1 = PrettyBarPlot2(signed.ctrJ[,dim],
+                         threshold = 1 / NROW(signed.ctrJ[,dim]),
+                         font.size = 2.5,
+                         color4bar = gplots::col2hex(col4all), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ[,dim]), 1.2*max(signed.ctrJ[,dim]))
+) + ggtitle("Contribution barplots", subtitle = 'Component 1: Variable Contributions (Signed)')
+
+
+#Ctr2----
+dim = 2
+ctrJ.2 = PrettyBarPlot2(signed.ctrJ[,dim],
+               threshold = 1 / NROW(signed.ctrJ[,dim]),
+               font.size = 2.5,
+               color4bar = gplots::col2hex(col4all), # we need hex code
+               ylab = 'Contributions',
+               ylim = c(1.2*min(signed.ctrJ[,dim]), 1.2*max(signed.ctrJ[,dim]))
+) + ggtitle("Contribution barplots", subtitle = 'Component 2: Variable Contributions (Signed)')
+
+ctrJ.12 = grid.arrange(
+  as.grob(ctrJ.1), as.grob(ctrJ.2), 
+  ncol = 2,nrow = 1,
+  top = textGrob("Contributions for Components 1 and 2", gp = gpar(fontsize = 18, font = 3))
+  )
+
+```
+
+As predicted, major contributions Component 1 include Episodic Memory, Future Prospection and Object Imagery items, together with a relatively smaller contribution from Openness items. 
+
+## Summary 
+MFA allows for the examination of multiple data tables at the same time by revealing the overall correlation patterns between their variables. If factorial designs are part of the experiment, MFA may be used to analyze group differences by bootstrapping confidence intervals. 
+
+The present analyses showed that one dimension—composed of memory, imagery and openness items—accounts for a relatively high proportion of variance in the current experimental design. Openness is moderately correlated to Episodic Memory and Future Prospection relative to Object Imagery, whose correlation with memory items is the strongest in the whole correlation matrix. 
+
+
+

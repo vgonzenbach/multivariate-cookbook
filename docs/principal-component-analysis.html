@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 2 Principal Component Analysis | Advanced Research Methods: Multivariate Analysis Cookbook</title>
+  <meta name="description" content="A recipe card for Multivariate Analysis" />
+  <meta name="generator" content="bookdown 0.18 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 2 Principal Component Analysis | Advanced Research Methods: Multivariate Analysis Cookbook" />
+  <meta property="og:type" content="book" />
+  
+  
+  <meta property="og:description" content="A recipe card for Multivariate Analysis" />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 2 Principal Component Analysis | Advanced Research Methods: Multivariate Analysis Cookbook" />
+  
+  <meta name="twitter:description" content="A recipe card for Multivariate Analysis" />
+  
+
+<meta name="author" content="Virgilio Gonzenbach" />
+
+
+<meta name="date" content="2019-12-15" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="index.html"/>
+<link rel="next" href="correspondence-analysis.html"/>
+<script src="libs/header-attrs-2.1/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">RM# Cookbook</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Introduction</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="index.html"><a href="index.html#analysis-of-psychometric-questionnaires"><i class="fa fa-check"></i><b>1.1</b> Analysis of psychometric questionnaires</a></li>
+<li class="chapter" data-level="1.2" data-path="index.html"><a href="index.html#transdiagnostic-or-multi-population-studies"><i class="fa fa-check"></i><b>1.2</b> Transdiagnostic or multi-population studies</a></li>
+<li class="chapter" data-level="1.3" data-path="index.html"><a href="index.html#neuroimaging-analysis"><i class="fa fa-check"></i><b>1.3</b> Neuroimaging analysis</a></li>
+<li class="chapter" data-level="1.4" data-path="index.html"><a href="index.html#further-reading"><i class="fa fa-check"></i><b>1.4</b> Further reading</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html"><i class="fa fa-check"></i><b>2</b> Principal Component Analysis</a>
+<ul>
+<li class="chapter" data-level="2.0.1" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#criteria-for-principal-components"><i class="fa fa-check"></i><b>2.0.1</b> Criteria for principal components</a></li>
+<li class="chapter" data-level="2.1" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#the-data"><i class="fa fa-check"></i><b>2.1</b> The Data</a></li>
+<li class="chapter" data-level="2.2" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#correlation-matrix"><i class="fa fa-check"></i><b>2.2</b> Correlation Matrix</a></li>
+<li class="chapter" data-level="2.3" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#running-pca"><i class="fa fa-check"></i><b>2.3</b> Running PCA</a></li>
+<li class="chapter" data-level="2.4" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#scree-plot"><i class="fa fa-check"></i><b>2.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="2.5" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#row-factor-scores"><i class="fa fa-check"></i><b>2.5</b> (Row) Factor Scores</a></li>
+<li class="chapter" data-level="2.6" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#tolerance-intervals"><i class="fa fa-check"></i><b>2.6</b> Tolerance Intervals</a></li>
+<li class="chapter" data-level="2.7" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#confidence-intervals"><i class="fa fa-check"></i><b>2.7</b> Confidence Intervals</a></li>
+<li class="chapter" data-level="2.8" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#column-factor-loadings"><i class="fa fa-check"></i><b>2.8</b> (Column) Factor loadings</a></li>
+<li class="chapter" data-level="2.9" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#factor-rotations-varimax"><i class="fa fa-check"></i><b>2.9</b> Factor Rotations (Varimax)</a>
+<ul>
+<li class="chapter" data-level="2.9.1" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#running-varimax"><i class="fa fa-check"></i><b>2.9.1</b> Running varimax</a></li>
+<li class="chapter" data-level="2.9.2" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#the-effect-of-varimax"><i class="fa fa-check"></i><b>2.9.2</b> The effect of varimax</a></li>
+</ul></li>
+<li class="chapter" data-level="2.10" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#contributions"><i class="fa fa-check"></i><b>2.10</b> Contributions</a></li>
+<li class="chapter" data-level="2.11" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#bootstrap-ratios"><i class="fa fa-check"></i><b>2.11</b> Bootstrap Ratios</a></li>
+<li class="chapter" data-level="2.12" data-path="principal-component-analysis.html"><a href="principal-component-analysis.html#summary"><i class="fa fa-check"></i><b>2.12</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html"><i class="fa fa-check"></i><b>3</b> Correspondence Analysis</a>
+<ul>
+<li class="chapter" data-level="3.0.1" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#masses-and-weights"><i class="fa fa-check"></i><b>3.0.1</b> Masses and Weights</a></li>
+<li class="chapter" data-level="3.0.2" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#two-kinds-of-factor-scores"><i class="fa fa-check"></i><b>3.0.2</b> Two kinds of factor scores</a></li>
+<li class="chapter" data-level="3.1" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#data"><i class="fa fa-check"></i><b>3.1</b> Data</a></li>
+<li class="chapter" data-level="3.2" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#the-contingency-table-transformed-table-of-deviations."><i class="fa fa-check"></i><b>3.2</b> The contingency table transformed: table of deviations.</a></li>
+<li class="chapter" data-level="3.3" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#running-ca"><i class="fa fa-check"></i><b>3.3</b> Running CA</a></li>
+<li class="chapter" data-level="3.4" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#scree-plot-1"><i class="fa fa-check"></i><b>3.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="3.5" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#asymmetric-plot"><i class="fa fa-check"></i><b>3.5</b> Asymmetric plot</a></li>
+<li class="chapter" data-level="3.6" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#symmetric-plot-with-cdc"><i class="fa fa-check"></i><b>3.6</b> Symmetric Plot with CDC</a></li>
+<li class="chapter" data-level="3.7" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#symmetric-plot-with-data-from-2004"><i class="fa fa-check"></i><b>3.7</b> Symmetric Plot with data from 2004</a></li>
+<li class="chapter" data-level="3.8" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#contributions-1"><i class="fa fa-check"></i><b>3.8</b> Contributions</a></li>
+<li class="chapter" data-level="3.9" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#bootstrap-ratios-1"><i class="fa fa-check"></i><b>3.9</b> Bootstrap ratios</a></li>
+<li class="chapter" data-level="3.10" data-path="correspondence-analysis.html"><a href="correspondence-analysis.html#summary-1"><i class="fa fa-check"></i><b>3.10</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html"><i class="fa fa-check"></i><b>4</b> Multiple Correspondence Analysis</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#the-data-1"><i class="fa fa-check"></i><b>4.1</b> The Data</a></li>
+<li class="chapter" data-level="4.2" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#correlation-matrix-for-recoded-data"><i class="fa fa-check"></i><b>4.2</b> Correlation Matrix for Recoded Data</a></li>
+<li class="chapter" data-level="4.3" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#running-mca"><i class="fa fa-check"></i><b>4.3</b> Running MCA</a></li>
+<li class="chapter" data-level="4.4" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#scree-plot-2"><i class="fa fa-check"></i><b>4.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="4.5" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#row-factor-scores-1"><i class="fa fa-check"></i><b>4.5</b> (Row) Factor Scores</a></li>
+<li class="chapter" data-level="4.6" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#column-factor-scores"><i class="fa fa-check"></i><b>4.6</b> Column Factor Scores</a></li>
+<li class="chapter" data-level="4.7" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#rotation"><i class="fa fa-check"></i><b>4.7</b> Rotation</a>
+<ul>
+<li class="chapter" data-level="4.7.1" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#dimension-1-and-2"><i class="fa fa-check"></i><b>4.7.1</b> Dimension 1 and 2</a></li>
+<li class="chapter" data-level="4.7.2" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#dimension-3-and-4"><i class="fa fa-check"></i><b>4.7.2</b> Dimension 3 and 4</a></li>
+<li class="chapter" data-level="4.7.3" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#dimension-5-and-6"><i class="fa fa-check"></i><b>4.7.3</b> Dimension 5 and 6</a></li>
+<li class="chapter" data-level="4.7.4" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#dimension-6-and-7"><i class="fa fa-check"></i><b>4.7.4</b> Dimension 6 and 7</a></li>
+</ul></li>
+<li class="chapter" data-level="4.8" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#contributions-2"><i class="fa fa-check"></i><b>4.8</b> Contributions</a></li>
+<li class="chapter" data-level="4.9" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#bootstrap-ratios-2"><i class="fa fa-check"></i><b>4.9</b> Bootstrap Ratios</a></li>
+<li class="chapter" data-level="4.10" data-path="multiple-correspondence-analysis.html"><a href="multiple-correspondence-analysis.html#summary-2"><i class="fa fa-check"></i><b>4.10</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html"><i class="fa fa-check"></i><b>5</b> Barycentric Discriminant Analysis</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#the-data-2"><i class="fa fa-check"></i><b>5.1</b> The Data</a></li>
+<li class="chapter" data-level="5.2" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#group-by-variables-matrix"><i class="fa fa-check"></i><b>5.2</b> Group by Variables Matrix</a></li>
+<li class="chapter" data-level="5.3" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#running-bada"><i class="fa fa-check"></i><b>5.3</b> Running BADA</a></li>
+<li class="chapter" data-level="5.4" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#scree-plot-3"><i class="fa fa-check"></i><b>5.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="5.5" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#factor-scores"><i class="fa fa-check"></i><b>5.5</b> Factor Scores</a></li>
+<li class="chapter" data-level="5.6" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#contributions-3"><i class="fa fa-check"></i><b>5.6</b> Contributions</a></li>
+<li class="chapter" data-level="5.7" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#bootstrap-ratios-3"><i class="fa fa-check"></i><b>5.7</b> Bootstrap Ratios</a></li>
+<li class="chapter" data-level="5.8" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#classification-confusion-matrices"><i class="fa fa-check"></i><b>5.8</b> Classification: Confusion matrices</a></li>
+<li class="chapter" data-level="5.9" data-path="barycentric-discriminant-analysis.html"><a href="barycentric-discriminant-analysis.html#summary-3"><i class="fa fa-check"></i><b>5.9</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html"><i class="fa fa-check"></i><b>6</b> Discriminant Correspondence Analysis</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#the-data-3"><i class="fa fa-check"></i><b>6.1</b> The Data</a></li>
+<li class="chapter" data-level="6.2" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#running-dica"><i class="fa fa-check"></i><b>6.2</b> Running DiCA</a></li>
+<li class="chapter" data-level="6.3" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#scree-plot-4"><i class="fa fa-check"></i><b>6.3</b> Scree Plot</a></li>
+<li class="chapter" data-level="6.4" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#factor-scores-1"><i class="fa fa-check"></i><b>6.4</b> Factor Scores</a></li>
+<li class="chapter" data-level="6.5" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#contributions-4"><i class="fa fa-check"></i><b>6.5</b> Contributions</a></li>
+<li class="chapter" data-level="6.6" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#bootstrap-ratios-4"><i class="fa fa-check"></i><b>6.6</b> Bootstrap Ratios</a></li>
+<li class="chapter" data-level="6.7" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#fixed-effect-classification"><i class="fa fa-check"></i><b>6.7</b> Fixed-Effect Classification</a></li>
+<li class="chapter" data-level="6.8" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#random-effect-classification"><i class="fa fa-check"></i><b>6.8</b> Random-Effect Classification</a></li>
+<li class="chapter" data-level="6.9" data-path="discriminant-correspondence-analysis.html"><a href="discriminant-correspondence-analysis.html#summary-4"><i class="fa fa-check"></i><b>6.9</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html"><i class="fa fa-check"></i><b>7</b> Partial Least Squares Correlation</a>
+<ul>
+<li class="chapter" data-level="7.0.1" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#saliences"><i class="fa fa-check"></i><b>7.0.1</b> Saliences</a></li>
+<li class="chapter" data-level="7.0.2" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#latent-variables"><i class="fa fa-check"></i><b>7.0.2</b> Latent Variables</a></li>
+<li class="chapter" data-level="7.1" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#the-data-4"><i class="fa fa-check"></i><b>7.1</b> The Data</a></li>
+<li class="chapter" data-level="7.2" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#correlation-matrix-1"><i class="fa fa-check"></i><b>7.2</b> Correlation Matrix</a></li>
+<li class="chapter" data-level="7.3" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#running-plsc"><i class="fa fa-check"></i><b>7.3</b> Running PLSC</a></li>
+<li class="chapter" data-level="7.4" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#scree-plot-5"><i class="fa fa-check"></i><b>7.4</b> Scree Plot</a></li>
+<li class="chapter" data-level="7.5" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#visualizing-latent-variables"><i class="fa fa-check"></i><b>7.5</b> Visualizing Latent Variables</a></li>
+<li class="chapter" data-level="7.6" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#visualizing-saliences"><i class="fa fa-check"></i><b>7.6</b> Visualizing Saliences</a></li>
+<li class="chapter" data-level="7.7" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#contributions-5"><i class="fa fa-check"></i><b>7.7</b> Contributions</a></li>
+<li class="chapter" data-level="7.8" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#bootstrap-ratios-5"><i class="fa fa-check"></i><b>7.8</b> Bootstrap ratios</a></li>
+<li class="chapter" data-level="7.9" data-path="partial-least-squares-correlation.html"><a href="partial-least-squares-correlation.html#summary-5"><i class="fa fa-check"></i><b>7.9</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html"><i class="fa fa-check"></i><b>8</b> Multiple Factor Analysis</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#data-1"><i class="fa fa-check"></i><b>8.1</b> Data</a></li>
+<li class="chapter" data-level="8.2" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#correlation-matrix-2"><i class="fa fa-check"></i><b>8.2</b> Correlation Matrix</a></li>
+<li class="chapter" data-level="8.3" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#scree-plot-6"><i class="fa fa-check"></i><b>8.3</b> Scree Plot</a></li>
+<li class="chapter" data-level="8.4" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#factor-scores-2"><i class="fa fa-check"></i><b>8.4</b> Factor Scores</a></li>
+<li class="chapter" data-level="8.5" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#factor-loadings"><i class="fa fa-check"></i><b>8.5</b> Factor loadings</a></li>
+<li class="chapter" data-level="8.6" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#partial-factor-scores"><i class="fa fa-check"></i><b>8.6</b> Partial Factor Scores</a></li>
+<li class="chapter" data-level="8.7" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#contributions-6"><i class="fa fa-check"></i><b>8.7</b> Contributions</a></li>
+<li class="chapter" data-level="8.8" data-path="multiple-factor-analysis.html"><a href="multiple-factor-analysis.html#summary-6"><i class="fa fa-check"></i><b>8.8</b> Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="distatis.html"><a href="distatis.html"><i class="fa fa-check"></i><b>9</b> DiSTATIS</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="distatis.html"><a href="distatis.html#the-data-5"><i class="fa fa-check"></i><b>9.1</b> The Data</a></li>
+<li class="chapter" data-level="9.2" data-path="distatis.html"><a href="distatis.html#running-distatis"><i class="fa fa-check"></i><b>9.2</b> Running DiSTATIS</a></li>
+<li class="chapter" data-level="9.3" data-path="distatis.html"><a href="distatis.html#screeplot-rv-matrix"><i class="fa fa-check"></i><b>9.3</b> ScreePlot Rv Matrix</a></li>
+<li class="chapter" data-level="9.4" data-path="distatis.html"><a href="distatis.html#the-rv-map"><i class="fa fa-check"></i><b>9.4</b> The Rv-map</a></li>
+<li class="chapter" data-level="9.5" data-path="distatis.html"><a href="distatis.html#compromise-factor-scores"><i class="fa fa-check"></i><b>9.5</b> Compromise factor scores</a></li>
+<li class="chapter" data-level="9.6" data-path="distatis.html"><a href="distatis.html#projecting-descriptors"><i class="fa fa-check"></i><b>9.6</b> Projecting descriptors</a></li>
+<li class="chapter" data-level="9.7" data-path="distatis.html"><a href="distatis.html#summary-7"><i class="fa fa-check"></i><b>9.7</b> Summary</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Advanced Research Methods: Multivariate Analysis Cookbook</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="principal-component-analysis" class="section level1" number="2">
+<h1><span class="header-section-number">Chapter 2</span> Principal Component Analysis</h1>
+<p>Principal Component Analysis (PCA) is a data-reduction technique that extracts the most important information out of a data table of quantitative variables. To accomplish this, PCA computes new variables called principal components through linear combinations of the original variables in a data set. This operation is equivalent to performing the singular value decomposition (SVD) on the original data set, which amounts to performing an eigendecomposition of the covariance or correlation matrix.</p>
+<div id="criteria-for-principal-components" class="section level3" number="2.0.1">
+<h3><span class="header-section-number">2.0.1</span> Criteria for principal components</h3>
+<div id="maximal-inertia" class="section level4" number="2.0.1.1">
+<h4><span class="header-section-number">2.0.1.1</span> Maximal Inertia</h4>
+<p>Inertia is a quantity that denotes the total variance in a matrix. The first principal component in a PCA-solution will capture most of the inertia in a covariance/correlation matrix.</p>
+</div>
+<div id="orthogonality" class="section level4" number="2.0.1.2">
+<h4><span class="header-section-number">2.0.1.2</span> Orthogonality</h4>
+<p>The second principal component (and third and so on) also maximizes variance explained. However, this is done under the constraint that this variance be orthogonal (i.e. independent) to variance explained by the first component (or, in general, orthogonal to all other previous components). Thus, the overall set of components that results are mutually independent. This implies that PCA will reveal how many <em>dimensions</em> of variability exist within the data.</p>
+</div>
+<div id="a-little-linear-algebra-detour" class="section level4" number="2.0.1.3">
+<h4><span class="header-section-number">2.0.1.3</span> A Little linear algebra detour!</h4>
+<p>A covariance matrix can be calculated by multiplying a matrix (i.e. data set) by its own transpose. Thus, the diagonal of the resulting matrix will contain the sum of squares for each of the original columns (i.e. variables), and the off-diagonal elements correspond to the sum of cross-products between the variables that intersect at that cell. Obviously, the covariance matrix is symmetric.<br />
+The correlation matrix is obtained from the covariance matrix via an extra step: the normalization of each column by the total sum of squares. This procedure constrains the elements of the diagonal (i.e. the sums of squares) equal to 1. Thus, all cells will have values between 0 and 1 which correspond to the correlation coefficient.</p>
+</div>
+</div>
+<div id="the-data" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> The Data</h2>
+<p>To illustrate how to interpret results from PCA, the present chapter analyzes a data table containing 144 observations corresponding to participants who took the Big Five Inventory Questionnaire. Thus, the table contains 44 columns consisting of Extraversion (8), Agreeableness (9), Conscientiousness (9), Neuroticism (8), and Openness (10) items.<br />
+The observations on this data can be classified into one of two groups—High Episodic Memory and Low Episodic Memory—according to the (quasi-) experimental design.</p>
+<pre><code>##   Ex1 Ex2 Ex3 Ex4 Ag1 Ag2 Ag3 Ag4 Co1 Co2 Co3 Co4 Ne1 Ne2 Ne3 Ne4 Op1 Op2 Op3
+## 1   5   2   4   4   2   4   5   3   5   4   5   2   3   4   5   5   2   5   3
+## 2   2   2   4   4   3   4   4   4   3   2   4   3   2   2   4   3   5   5   5
+## 3   3   2   4   3   1   1   1   5   1   1   2   4   5   5   1   5   5   4   1
+## 4   2   2   2   2   2   5   5   3   3   4   5   2   5   3   2   4   4   5   5</code></pre>
+</div>
+<div id="correlation-matrix" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> Correlation Matrix</h2>
+<p>Since PCA decomposes a correlation matrix, a natural starting point is to visualize said matrix and take note of the strength and directions of the correlation patterns.</p>
+<p><img src="01-PCA_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>In this correlation matrix, a couple of features can be highlighted. First, there is a strong pattern of correlation between items of the same type. Second, Neuroticism items are negatively correlated to other types of items. These patterns will drive how PCA displays the information in this table.</p>
+</div>
+<div id="running-pca" class="section level2" number="2.3">
+<h2><span class="header-section-number">2.3</span> Running PCA</h2>
+<p>PCA is executed with the ‘epPCA’ function from the ExPosition package. The function takes multiple parameters:</p>
+<ol style="list-style-type: decimal">
+<li>the data must be preprocessed so that only the quantitative variables of interest are included as parameters to the function.<br />
+</li>
+<li>scale = TRUE or ‘SS1’ vs scale = FALSE: the choice of whether or not to scale will depend on the data at hand. In this case, the data is comprised of responses to items from a single questionnaire and all items follow the same Likert scale. Since all items have the same unit (i.e. use the same response scale), not scaling would allow for the preservation of important information. For example, some items may capture more variance than others, or may vary under very specific conditions thus revealing the importance of these conditions. However, in cases where units for the columns differ, <strong>not</strong> scaling would cause certain columns to ‘illegitimately’ dominate the PCA decomposition of the table. Thus, as a rule of thumb, scaling is necessary when units of the columns differ and optional (but preferable) when units are the same.<br />
+</li>
+<li>center = TRUE: the data is centered by default.<br />
+</li>
+<li>DESIGN: if there was an experimental design that informed data collection then it can be entered here. This will allow for visualization of group membership. However, other categorial variables, can be entered here too, regardless of whether they are integral part of the experimental design (i.e. posthoc).<br />
+</li>
+<li>graph: turned off by preference.</li>
+</ol>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="principal-component-analysis.html#cb2-1"></a>resPCA =<span class="st"> </span><span class="kw">epPCA</span>(bfi.quant,</span>
+<span id="cb2-2"><a href="principal-component-analysis.html#cb2-2"></a>               <span class="dt">scale =</span> <span class="ot">FALSE</span>,</span>
+<span id="cb2-3"><a href="principal-component-analysis.html#cb2-3"></a>               <span class="dt">center =</span> <span class="ot">TRUE</span>,</span>
+<span id="cb2-4"><a href="principal-component-analysis.html#cb2-4"></a>               <span class="dt">DESIGN =</span> memoryGroups,</span>
+<span id="cb2-5"><a href="principal-component-analysis.html#cb2-5"></a>               <span class="dt">graph =</span> <span class="ot">FALSE</span></span>
+<span id="cb2-6"><a href="principal-component-analysis.html#cb2-6"></a>               )</span></code></pre></div>
+</div>
+<div id="scree-plot" class="section level2" number="2.4">
+<h2><span class="header-section-number">2.4</span> Scree Plot</h2>
+<p>The scree plot below visualizes the amount of inertia explained by each component: the eigenvalue associated with each component (i.e. eigenvector).</p>
+<p><img src="01-PCA_files/figure-html/scree-1.png" width="672" /></p>
+<div id="a-note-on-the-permutation-test" class="section level4" number="2.4.0.1">
+<h4><span class="header-section-number">2.4.0.1</span> A note on the Permutation Test</h4>
+<p>A key question whenever performing PCA on any data is ‘how many components should be kept’? A way to answer this is by distinguishing between significant and non-significant components. This distinction is done all the time in the framework of null hypothesis significant testing. Following the overall reasoning of NHST, if our statistic of interest (i.e. eigenvalue of a component, or total inertia explained by a component) has a value which is unlikely to occur by chance, we may conclude that the observed statistic is (statistically) significant.<br />
+However, the problem when doing PCA is that it is not evident what the distribution of eigenvalues is under the null hypothesis. The permutation procedure allows for the derivation of a distribution (of eigenvalues) when the null hypothesis is true. This is done by rearranging our data set in a way that breaks any relationships between columns or between rows that might exist—see Berry et al., 2011.</p>
+<p>The scree plot shows that the permutation test highlighted 5 components as being statistically significant. Visualization of factor scores and loadings is show for these 5 components below.</p>
+</div>
+</div>
+<div id="row-factor-scores" class="section level2" number="2.5">
+<h2><span class="header-section-number">2.5</span> (Row) Factor Scores</h2>
+<p>PCA summarizes a data table so that the resulting components capture most of the variance between data points. Therefore, PCA can be thought of as drawing an axis across a multidimensional array of data points, under the condition that projections of the data points onto the first axis are <em>maximized</em>; alternatively, it is the distance between the data points and the axis that is <em>minimized</em>, in a least-squares sense. The concept of a row factor score (or factor scores) corresponds to this geometric projection of data points onto a component’s axis: projection onto axis (i.e. factor scores) = distance of data point from the origin * angle (i.e. loading; explained below).<br />
+The graph shown below corresponds to a representation of observations (i.e. data points) according to the first and second components. Points are colored by group membership.</p>
+<p><img src="01-PCA_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>We can appreciate that the x-axis corresponding to component 1 captures more spread in the data (17% of inertia) relative to component 2. This will always be the case as component 1 extracts the most variance.<br />
+The means of each group are also displayed. It appears that groups migh differ according to the first component. However, without a within-group variability estimate, there is as yet no way through which conclude that this difference is statistically significant.</p>
+</div>
+<div id="tolerance-intervals" class="section level2" number="2.6">
+<h2><span class="header-section-number">2.6</span> Tolerance Intervals</h2>
+<p><img src="01-PCA_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>A convex hull that contains all data points in a group is a good way to graph the total range of factor scores associated with that group. The graph shows that the overlap between groups is high, since the majority of the data point can be found at the intersection between the convex hulls.</p>
+</div>
+<div id="confidence-intervals" class="section level2" number="2.7">
+<h2><span class="header-section-number">2.7</span> Confidence Intervals</h2>
+<p>Confidence intervals for each group’s mean can be calculated by computing the bootstrap distribution of group means and excluding value at the tails (e.g., 2.5% in each direction to obtain a 95% confidence interval). This would be the equivalent to a (post hoc) significant testing.</p>
+<div id="a-note-about-bootstrapping" class="section level4" number="2.7.0.1">
+<h4><span class="header-section-number">2.7.0.1</span> A note about Bootstrapping</h4>
+<p>The Bootstrap method serves as a way to quantify the behavior of population parameters or other statistics. As applied here, the general principle behind the bootstrap is to generate multiple alternate samples for each subsample (i.e. memory groups) so as to simulate their distribution if the experiment were to be replicated. Observations from a group are sampled randomly and <em>with</em> replacement, then the mean for the group is calculated for this distribution. The procedure is repeated a large amounts of times (1000 times in this example) to produce a distribution of group means, and from this distribution the confidence interval of the means is computed for the group.<br />
+Note that the random sampling in a bootstrap procedure draws an entire row from the dataset. Thus, a key feature of the bootstrap is that it preserves the associations between variables, or the effect found in the data, whereas the permutation test does not.</p>
+<p>The ellipses graphed below represent the 95% confidence intervals (for components 1 and 2).</p>
+<p><img src="01-PCA_files/figure-html/bootstrap-1.png" width="672" /></p>
+<p>Groups statistically differ on component 1; the projection of the ellipses onto component 2 overlap therefore this component does not differentiate between groups.<br />
+To interpret this difference between groups, we will want to know what variables constitute component 1.</p>
+</div>
+</div>
+<div id="column-factor-loadings" class="section level2" number="2.8">
+<h2><span class="header-section-number">2.8</span> (Column) Factor loadings</h2>
+<p>In PCA, the rows (i.e. observations) of a data set are described by their factor scores or projections; the columns, however, are described by their loadings or correlations. The combination of the two (scaled by the eigenvalues) gives a complete description of the original data. (Recall the formula, “projection onto axis (i.e. factor scores) = distance of data point from the origin * angle (i.e. loading)”).<br />
+Each variable stands in relation to each of the components and this relationship is described by the (cosine of the) angle between a the variable vector and a component.<br />
+Note: The factor loadings graphed below have been scaled to represent the total amount of variance in components 1 and 2 (and beyond). This can be done by multiplying the factor loadings (i.e. matrix Q of the SVD) by the diagonal matrix of the eigenvalues.</p>
+<p>The plot below captures the overall correlation pattern of the table.</p>
+<p><img src="01-PCA_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>Interpreting the angles between variables, the plot shows that items of the same type tend to be associated with each other—the tip of the vectors of the same color point toward the same general direction. The plot also reflects the correlation matrix insofar as neuroticism loads negatively on component 1 which reflects the negative correlation between neuroticism items and other item types. Component 2, however, is more difficult to interpret.</p>
+</div>
+<div id="factor-rotations-varimax" class="section level2" number="2.9">
+<h2><span class="header-section-number">2.9</span> Factor Rotations (Varimax)</h2>
+<p>To aid interpretation, factor rotation can be applied to results of a PCA. Varimax, the most popular rotation method, correspond to a rotation eigenvectors within subspace—e.g., the 5 significant components in this example—so that each item loads onto as few components as possible under the constraint that these components remain orthogonal to each other.<br />
+Our original correlation matrix showed that there is a clear structure in which items of the same type are strongly correlated with each other. In the graph of the factor loadings, component 1 reflects the overall correlation pattern between item types, not within item types. Therefore, performing a varimax rotation would clarify the factor structure so that each component reflects the within-type correlation for a specific item type.</p>
+<div id="running-varimax" class="section level3" number="2.9.1">
+<h3><span class="header-section-number">2.9.1</span> Running varimax</h3>
+<p>The code below is used to run varimax on the results of a PCA. Based on the orignal scree plot I decided to keep 5 dimensions.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="principal-component-analysis.html#cb3-1"></a>vari.PCA =<span class="st"> </span><span class="kw">epVari</span>(resPCA, <span class="dt">dim2keep =</span> <span class="dv">5</span>)</span></code></pre></div>
+<p>This screeplot shows this dimensions after rotation: the eigenvalues have less of a spread, indicating that they are represented more equally.
+<img src="01-PCA_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+</div>
+<div id="the-effect-of-varimax" class="section level3" number="2.9.2">
+<h3><span class="header-section-number">2.9.2</span> The effect of varimax</h3>
+<p>The plot of factor loadings after rotation shows the effect of varimax.
+<img src="01-PCA_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p>The difference between group means becomes more evenly distributed across the first two components. Thanks to the simplified structure, it is evident that the first two components reflect Openness and Extraversion. Thus, the High memory group is higher than the Low memory group in both Openness and Extraversion.</p>
+<p>To showcase the full effect of a varimax rotation, all the factor loadings for the significant components are graphed below.</p>
+<p><img src="01-PCA_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p>The plots of components 3 and 4 show that they correspond to Neuroticism and Conscientiousness, respectively. The memory groups do not differ in either of these personality dimensions.</p>
+<p><img src="01-PCA_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>These plots show components 3 and 5. Component 5 corresponds to Agreeableness and there is no difference between groups here.</p>
+<p>In summary, varimax revealed the underlying psychometric model in the BFI: that there are 5 largely independent factors of personality measured by this questionnaire.</p>
+</div>
+</div>
+<div id="contributions" class="section level2" number="2.10">
+<h2><span class="header-section-number">2.10</span> Contributions</h2>
+<p>Another tool to interpret the components is to calculate contributions. Contributions reflect how important a column (or row) is to the interpretation of an eigenvector/component. The contributions can be calculated for both the rows and the columns by squaring the factor scores for an element and dividing by the eigenvalue in question. Columns (or rows) with a (squared) contribution above the average should be used to interpret a component.<br />
+Graphing row contributions would be a good way to detect outliers. In this example, however, I only show the contributions for the components.</p>
+<p><img src="01-PCA_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p>The barplots for the contributions shown above confirm what we already concluded from graphing the factor loading. Since contributions are derived from factor loadings (by loadings, it is meant the “scaled” loadings that have been multiplied by the corresponding eigenvalue), it naturally follows that this information is replicated. Graphing contribution does make explicit, however, the threshold for importance and highlights important variables only, making the graph more readable in some cases.</p>
+</div>
+<div id="bootstrap-ratios" class="section level2" number="2.11">
+<h2><span class="header-section-number">2.11</span> Bootstrap Ratios</h2>
+<p>In general, a bootstrap ratio is a quantity akin to a t-test, calculated from a bootstrap distribution instead of a theoretical t distribution. In the context of PCA, bootstrap ratios are almost always used to test the stability of the contributions (of the variables or observations).<br />
+The procedure is simple. Bootstrapping—i.e. running PCA multiple (i.e. 1000) times with different bootstrap samples each time—generates a distribution of contribution values from which we can extract the mean and the standard deviation for each variables. The mean contribution is then divided by its corresponding (mean) standard deviation to produce the bootstrap ration. Bootstrap ratios more extreme than 2 (or -2) reflect that that variable’s contribution is statistically significant (p &lt;.05). This threshold of 2 can be modified to account for multiple comparisons. The threshold for this example is equal to 3, corresponding to p &lt; .001.</p>
+<p>The bootstrap ratios shown below confirm the stability of variable contributions.</p>
+<p><img src="01-PCA_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+</div>
+<div id="summary" class="section level2" number="2.12">
+<h2><span class="header-section-number">2.12</span> Summary</h2>
+<p>PCA (with a varimax rotation) was used in this example to reveal the underlying structure in the BFI questionnaire. Results showed that the BFI capture variability in personality across 5 different dimensions: Openness, Extraversion, Neuroticism, Conscientiousness and Agreeableness. Further, High and Low Episodic memory groups showed differences in their levels of Openness and Extraversion.<br />
+In further analyses, I explore the correlation between memory and these personality dimensions further.</p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="index.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="correspondence-analysis.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": null,
+"text": null
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>

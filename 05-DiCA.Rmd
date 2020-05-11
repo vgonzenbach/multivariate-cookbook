@@ -1,0 +1,190 @@
+# Discriminant Correspondence Analysis
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
+knitr::opts_knit$set(warning=FALSE, message=FALSE)
+knitr::opts_knit$set(root.dir = "/Users/vgonzenb/Documents/RM3/My Work/DiCA")
+setwd("/Users/vgonzenb/Documents/RM3/My Work/DiCA")
+library(ExPosition)
+library(InPosition)
+library(TExPosition)
+library(TInPosition)
+library(tidyverse)
+library(data4PCCAR)
+library(PTCA4CATA)
+library(grDevices)
+library(corrplot)
+library(devtools)
+library(ggplotify)
+library(gridExtra)
+library(officer)
+library(grid)
+
+
+#Data----
+BFI = read.csv('../DATA/BFIdata.csv')
+bfi.quant.Recoded = read.csv('../DATA/BFIdataRecoded.csv')[BFI$Active == TRUE,]
+
+#color4BFI----
+Ex = grep("Ex", colnames(bfi.quant.Recoded))
+Ag = grep("Ag", colnames(bfi.quant.Recoded))
+Co = grep("Co", colnames(bfi.quant.Recoded))
+Ne = grep("Ne", colnames(bfi.quant.Recoded))
+Op = grep("Op", colnames(bfi.quant.Recoded))
+
+col4BFI = c(rep("firebrick2", length(Ex)),
+            rep("darkolivegreen3", length(Ag)),
+            rep("dodgerblue2", length(Co)),
+            rep("mediumpurple3", length(Ne)),
+            rep("goldenrod1", length(Op)))
+
+#memoryColors 
+memoryGroups = droplevels(BFI$memoryGroups[BFI$Active == TRUE])
+memoryColors = recode(memoryGroups, High = 'dodgerblue3', Low = 'brown3')
+#choose active rows
+#recode vector with memory colors:: function from DATA4PCAR or PTC4CATA
+
+#color for BFI disjunctive table
+bfi.quant.Recoded.dis = makeNominalData(bfi.quant.Recoded)
+
+col4BFI.dis = c(rep("firebrick2", length(grep("Ex", colnames(bfi.quant.Recoded.dis)))),
+                rep("darkolivegreen3", length(grep("Ag", colnames(bfi.quant.Recoded.dis)))),
+                rep("dodgerblue2", length(grep("Co", colnames(bfi.quant.Recoded.dis)))),
+                rep("mediumpurple3", length(grep("Ne", colnames(bfi.quant.Recoded.dis)))),
+                rep("goldenrod1", length(grep("Op", colnames(bfi.quant.Recoded.dis)))))
+
+
+
+#put each group in its own matrix
+X = as.matrix(bfi.quant.Recoded.dis[memoryGroups == "High",])
+Y = as.matrix(bfi.quant.Recoded.dis[memoryGroups == "Low",])
+XY = as.matrix(bfi.quant.Recoded.dis)
+
+```
+
+Discriminant Correspondence Analysis (DiCA) is a version of discriminant analysis that utilizes categorical variables to arrive at a optimal discrimination between groups. Like BADA, DiCA analyzes the groups-by-variables matrix. However, like CA, DiCA carries out the generalized singular value decomposition wiht masses and weights.  
+\indent Because of the high overlap between these methods, this report focuses on key differences between BADA and DiCA results rather than a independent exposition of DiCA. 
+
+## The Data
+This report includes DiCA results for the analysis of the Recoded BFI matrix used in MCA (in which each variable was binned so that group sizes were as equivalent as possible).
+
+```{r}
+bfi.quant.Recoded[1:4, 1:6]
+```
+
+## Running DiCA
+DiCA is executed by the 'tepDICA' function in the TExPosition package. A unique feature of DiCA is the parameter group.masses which computes the relative importance of each group based on how many observations each contains. In a balanced design, this parameter can be ignored—as it is done here.  
+```{r echo=TRUE, include=TRUE}
+resDiCA <- tepDICA(bfi.quant.Recoded.dis, make_data_nominal = FALSE, 
+                   #group.masses = g.masses,
+                   # weight = rep(1, nrow(XYmat)),                    
+                   DESIGN = memoryGroups, graphs = FALSE)
+```
+```{r include=FALSE}
+set.seed(70301) # set the seed
+# for random so that we all have the same results. 
+nIter = 100
+resDiCA.inf <- tepDICA.inference.battery(XY,
+                                         DESIGN = memoryGroups,
+                                         #group.masses = g.masses,
+                                         test.iters = nIter,
+                                         graphs = FALSE)
+```
+
+## Scree Plot
+As in BADA, the dimensionality of the DiCA results will usually depend on the number of groups (assuming the number of groups is less than the number of varianbles). Here, only one dimension is obtained since there are only two groups. 
+
+```{r}
+PlotScree(ev = resDiCA$TExPosition.Data$eigs,
+          title = 'DiCA BFI: Inertia Scree Plot',
+          plotKaiser = FALSE, 
+          color4Kaiser = ggplot2::alpha('darkorchid4', .5),
+          lwd4Kaiser  = 2)
+
+```
+
+## Factor Scores
+
+The factor scores are displayed in histograms since there is only dimensions. Their distribution is slightly less smooth than in BADA but the non-overlap between groups is comparable.  
+
+```{r}
+#Row Factor Scores
+group.means = getMeans(resDiCA$TExPosition.Data$fii, 
+                       memoryGroups)
+
+fii.df = cbind(as.data.frame(resDiCA$TExPosition.Data$fii), memoryGroups)
+
+fii.df %>%
+  ggplot(aes(x=resDiCA$TExPosition.Data$fii[,1], fill=memoryGroups, color=memoryGroups)) +
+  geom_histogram(alpha=0.2, position="identity", bins = 18) + 
+  geom_vline(xintercept = group.means[,1], color = levels(memoryColors), linetype="dashed") + 
+  scale_fill_manual(values=levels(memoryColors)) + 
+  scale_color_manual(values=levels(memoryColors)) + 
+  ggtitle("Histograms of Row Factor Scores") + xlab("Fii") +
+  theme_light()
+```
+
+## Contributions
+Signed contributions are reported for each of the BFI variables.  
+
+```{r}
+# Contributions -----------------------------------------------------------
+ctrJ <- resDiCA$TExPosition.Data$cj
+signed.ctrJ <- ctrJ * sign(resDiCA$TExPosition.Data$fj)
+
+# plot contributions for component 1
+PrettyBarPlot2(signed.ctrJ[,1],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 1.5,
+                         color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ), 1.2*max(signed.ctrJ))
+) + ggtitle("Contribution barplots", subtitle = 'Component 1: Variable Contributions (Signed)')
+
+```
+
+As in BADA, Extraversion and Openness drive group differences. However, small contributions from other personality items—Agreeableness, Neuroticism—reach significance. 
+
+## Bootstrap Ratios
+Bootstrap ratios reveal that contributions from items other than Openness and Extraversion are not stable.  
+```{r}
+#BootStrap Ratio
+BR <- resDiCA.inf$Inference.Data$boot.data$fj.boot.data$tests$boot.ratios
+laDim <- 1
+PrettyBarPlot2(BR[,laDim],
+                            threshold = 2,
+                            font.size = 1.5,
+                            color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                            ylab = 'Bootstrap ratios'
+                            #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+```
+
+The low-stability of these contributions suggests that BADA is more stable than DiCA in this data, likely due to the pre-processing step of binning variables and the many ways it could have been different. 
+
+## Fixed-Effect Classification
+```{r}
+# Confusion Matrix --------------------------------------------------------
+resDiCA.inf$Fixed.Data$TExPosition.Data$assign$confusion
+```
+The confusion matrix above suggests that DiCA may be more symmetrical at classifying observations than BADA. The hit rate for the groups is equivalent while BADA tended to overclassify observations as belonging to the High memory (i.e. false alarms).
+
+```{r}
+sum(diag(resDiCA$TExPosition.Data$assign$confusion))/nrow(bfi.quant.Recoded)
+```
+
+Overall accuracy for DiCA remains comparable to BADA (if only slightly better).
+
+## Random-Effect Classification
+
+The random-effect confusion matrix suggests that the symmetry of classification of DiCA remains stable when classifying 'out-of-sample' observations. However, as evidenced by the accuracy index, overall performance is slighly worse than BADA.
+```{r}
+resDiCA.inf$Inference.Data$loo.data$loo.confuse
+```
+```{r}
+sum(diag(resDiCA.inf$Inference.Data$loo.data$loo.confuse))/nrow(bfi.quant.Recoded)
+```
+
+## Summary
+DiCA performs a discriminant analysis when the data describing each group is categorical. The current analysis showed that DiCA classification was slightly worse than BADA's, yet a feature that should be remarked is that DiCA was less-biased toward classifying observations as belonging to the high group. It is conceivable than in some instances this feature would be preferable than a slighly better performance. Thus, DiCA remains a viable option for real-world implementations.

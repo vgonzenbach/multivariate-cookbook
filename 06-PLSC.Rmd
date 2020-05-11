@@ -1,0 +1,371 @@
+
+# Partial Least Squares Correlation
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+knitr::opts_knit$set(root.dir = "/Users/vgonzenb/Documents/RM3/My Work/PLSC")
+setwd("/Users/vgonzenb/Documents/RM3/My Work/PLSC")
+#include these packages on all scripts
+library(ExPosition)
+library(InPosition)
+library(tidyverse)
+library(TExPosition)
+library(TInPosition)
+library(data4PCCAR)
+library(PTCA4CATA)
+library(grDevices)
+library(corrplot)
+library(devtools)
+library(ggplotify)
+library(gridExtra)
+library(officer)
+library(grid)
+
+#Data----
+BFI = read.csv('../DATA/BFIdata.csv')
+bfi.quant = BFI[BFI$Active == TRUE,6:49]
+
+SAM = read.csv("../DATA/SAMdata.csv")
+sam.quant = SAM[SAM$Active == TRUE, 6:ncol(SAM)]
+
+#color4BFI----
+Ex = grep("Ex", colnames(bfi.quant))
+Ag = grep("Ag", colnames(bfi.quant))
+Co = grep("Co", colnames(bfi.quant))
+Ne = grep("Ne", colnames(bfi.quant))
+Op = grep("Op", colnames(bfi.quant))
+
+col4BFI = c(rep("firebrick2", length(Ex)),
+            rep("darkolivegreen3", length(Ag)),
+            rep("dodgerblue2", length(Co)),
+            rep("mediumpurple3", length(Ne)),
+            rep("goldenrod1", length(Op)))
+
+#memoryColors 
+memoryGroups = droplevels(BFI$memoryGroups[BFI$Active == TRUE])
+memoryColors = recode(memoryGroups, High = 'dodgerblue3', Low = 'brown3')
+#choose active rows
+#recode vector with memory colors:: function from DATA4PCAR or PTC4CATA
+
+
+
+E = grep("^E.", colnames(sam.quant))
+S = grep("^S.", colnames(sam.quant))
+P = grep("^P.", colnames(sam.quant))
+F = grep("^F", colnames(sam.quant))
+
+col4SAM = c(rep("indianred1", length(E)),
+            rep("lightcyan2", length(S)),
+            rep("lightpink1", length(P)),
+            rep("lightsteelblue1", length(F)))
+
+```
+
+Partial Least Squares Correlation (PLSC) is a technique to extract the common information between tables. The SVD in PLSC decomposes, not the original data tables, but the matrix R which is the product of the Z-transformed original data tables. Thus, the each dimension of a PLSC analysis will maximize the covariance between two tables while following the orthogonality contraint of PCA-based methods. Some key differences between PCA are PLSC are highlighted.  
+
+### Saliences
+PLSC decomposes the R correlation matrix between tables as three separate but related matrices: U∆V^T^; where U and V correspond to the matrices of Y and X saliences, respectively, and ∆ correspond to the diagonal matrix containing the singular values (i.e. the square root of the eigenvalue). Saliences are similar to loadings and as such, they should be interpreted as the correlation between a variable and a component (i.e. the coefficient of a given variable in the linear combination that results in an eigenvector).  
+\indent The key difference here is that PLSC computes two sets of saliences whereas PCA computes only one set of loadings. This is because latent variables and saliences are compute for both table X and Y, and each orrespond to one and only one table (e.g., saliences for latent variable x are only computed for variables from table X, not Y). 
+
+### Latent Variables
+Latent variables are similar to factor scores in PCA. However, they are computed differently. While in PCA factor scores are computed by multiplying the matrix P by ∆, in PLSC multiplying U by ∆ does not give the factor scores (of the rows). Instead, latent variables are computed by projecting the Z-normalized data onto the matrix containing its saliences. Therefore, each singular value (or eigen-value) is associated with two latent variables (instead of one "component" as in PCA). [Note: although multiplying U by ∆ does not give the row factor scores, this operation is still useful in that it is the equivalent of scaling loadings to their associated total variance—an approach that was used in the PCA example.]  
+\indent A characteristic of PLSC is that the two sets of latent variables associated with the same singular value are correlated (that is after all the purpose of executing PLSC); however, two latent variables associated with different singular values are orthogonal. Thus, PLSC has its own orthogonality constraint. 
+  
+## The Data
+In this example, I re-utilize the BFI data as the first table. The second table is the Survey of Autobiographical Memory (SAM). SAM consists of 24 items each measuring a certain component of autobiographical memory: Episodic Memory (8 items), Semantic Memory (6), Spatial Memory (6), and Future Prospection (6). Like the BFI, the SAM utilizes a 5-point Likert scale.
+
+```{r echo=FALSE}
+sam.quant[1:4,c(E[1:2], S[1:2], P[1:2], F[1:2])]
+```
+  
+Performing PLSC on the BFI and the SAM attempts to answer the following research question: how are personality factors related to components of autobiographical memory? Note that this is the same research question of PCA, but from another point of view.
+
+## Correlation Matrix
+PLSC decomposes the correlation matrix between two tables. Therefore, visualizing this correlation matrix will allow us to anticipate the results of the analysis.
+
+```{r echo=FALSE, include=TRUE}
+cor.PLSC = corrplot(t(cor(bfi.quant,sam.quant)), 
+                   method = "circle", 
+                   tl.col = col4BFI,
+                   tl.cex = 0.63)
+```
+
+By looking at the correlation matrix, we can distinguish what seem to be "hotspots" of strong correlations, namely the corners of the graph. This suggests that Extraversion and Openness will be highlighted, along with Episodic Memory and Future Prospection, in the PLSC results. 
+
+## Running PLSC
+PLSC is executed by the 'tepPLS' function in the TExPosition. Important parameters are: the two tables that will be used in the analysis; and whether to normalize within each table. This example is not normalized for either scale, since both use Likert scales.
+
+```{r runPLSC, echo=TRUE, include=FALSE}
+resPLSC <- tepPLS(bfi.quant, sam.quant,
+                  DESIGN = memoryGroups,
+                  graphs = FALSE,
+                  scale1 = FALSE,
+                  scale2 = FALSE)
+```
+```{r echo=FALSE, include=FALSE}
+# Inferences ----
+nIter = 1000 
+# 1. Permutation test ----
+resPerm4PLSC <- perm4PLSC(bfi.quant, # First Data matrix 
+                          sam.quant, # Second Data matrix
+                          nIter = nIter # How mny iterations
+)
+#_____________________________________________________________________
+#_____________________________________________________________________
+# 2. Bootstrap -----
+resBoot4PLSC <- Boot4PLSC(bfi.quant, # First Data matrix 
+                                      sam.quant, # Second Data matrix
+                                      nIter = 1000, # How many iterations
+                                      Fi = resPLSC$TExPosition.Data$fi,
+                                      Fj = resPLSC$TExPosition.Data$fj,
+                                      nf2keep = 3,
+                                      critical.value = 2,
+                                      eig = TRUE,
+                                      alphaLevel = .05)
+
+```
+
+
+## Scree Plot
+
+The scree plot below shows one dimension that explains 82% of the variance. The rest of dimensions are below the Kaiser criterion (i.e. eigenvalue = 1) and likely represent noise.  
+
+```{r echo=FALSE}
+PlotScree(ev = resPLSC$TExPosition.Data$eigs,
+          p.ev = resPerm4PLSC$pEigenvalues,
+          title = 'PLSC. BFI vs SAM',
+          plotKaiser = TRUE, 
+          color4Kaiser = ggplot2::alpha('darkorchid4', .5),
+          lwd4Kaiser  = 2)
+```
+
+Note that a few dimensions past the "elbow" are highlighted as significant by the permutation test. This is because the null hypothesis in PLSC is that all correlation coefficients in the R matrix are zero. Since there are so many, at least a few of these will surpass the significance threshold by chance alone. Therefore, the inference battery in PLSC is overpowered in most cases.
+
+## Visualizing Latent Variables
+In PLSC, we are interested in the association between two tables. To understand this, we visualize the Latent variables of X and Y corresponding to the same singular value. 
+
+```{r echo=FALSE}
+# For the first plot, the first component of the latent variable of X is the x-axis, and the first component of the latent variable of Y is the y-axis
+latvar.1 <- cbind(resPLSC$TExPosition.Data$lx[,1],resPLSC$TExPosition.Data$ly[,1])
+colnames(latvar.1) <- c("Lx 1", "Ly 1")
+
+# compute means
+lv.1.group <- getMeans(latvar.1, memoryGroups)
+
+# get bootstrap intervals of groups
+lv.1.group.boot <- Boot4Mean(latvar.1, memoryGroups)
+colnames(lv.1.group.boot$BootCube) <- c("Lx 1", "Ly 1")
+
+
+plot.lv1 <- createFactorMap(latvar.1,
+                            title = paste0("Dim. 1 Row Factor Scores. T: ", round(resPLSC$TExPosition.Data$t[1], 1), "%"),
+                            pch = 19,
+                            cex = 2,
+                            col.points = memoryColors,
+                            col.labels = memoryColors
+                            )
+
+plot1.mean <- createFactorMap(lv.1.group,
+                              col.points = levels(memoryColors),
+                              col.labels = levels(memoryColors),
+                              cex = 4,
+                              pch = 17,
+                              alpha.points = 0.8)
+
+plot1.meanCI <- MakeCIEllipses(lv.1.group.boot$BootCube[,c(1:2),], # get the first two components
+                               col = levels(memoryColors),
+                               names.of.factors = c("Lx 1", "Ly 1")
+)
+
+plot.lv1$zeMap_background + plot.lv1$zeMap_dots + plot1.mean$zeMap_dots + plot1.mean$zeMap_text + plot1.meanCI
+```
+
+The graph shows that dimension 1 distinguishes between groups, especially Latent variable y. [Note: "Dimension 1" corresponds to both latent variables together.] Thus, the SAM serves to validate the grouping criteria used as the "experimental"  design. 
+
+## Visualizing Saliences
+The saliences for dimension 1 are graphed to understand how each variable correlates to the laten variable.
+
+```{r echo=FALSE}
+# Third Plot --------------------------------------------------------------
+
+#plot3: the column loadings of the 1st component of X and Y. –> 
+#colors of the columns are in fi.col and fj.col 
+#(but you can use your own colors too). 
+#This should go next to your plot 1 in your slides.
+
+P1 = resPLSC$TExPosition.Data$pdq$p[,1] 
+Q1 = resPLSC$TExPosition.Data$pdq$q[,1] 
+
+P1.plot = PrettyBarPlot2(P1,
+                         threshold = 0,
+                         font.size = 3,
+                         color4bar = gplots::col2hex(col4BFI), # we need hex code
+                         ylab = 'Saliences',
+                         ylim = c(1.2*min(P1), 1.2*max(P1))
+) + ggtitle("",subtitle = 'P1 Saliences')
+
+
+Q1.plot <- PrettyBarPlot2(Q1,
+                          threshold = 0,
+                          font.size = 3,
+                          color4bar = gplots::col2hex(col4SAM), # we need hex code
+                          ylab = 'Saliences',
+                          ylim = c(1.2*min(Q1), 1.2*max(Q1))
+) + ggtitle("",subtitle = 'Q1 Saliences')
+
+P1Q1.plot = grid.arrange(
+  as.grob(P1.plot), as.grob(Q1.plot),
+  ncol = 1,nrow = 2,
+  top = textGrob("Saliences for Dimension 1", gp = gpar(fontsize = 18, font = 3))
+)
+
+```
+
+The barplots show the correlation of each element of the table to the corresponding Latent Variable. For the BFI, Openness items correlated particularly high with Latent variable X, followed by Extraversion and then Conscientiousness. For SAM, Episodic Memory and Future Prospection correlate highly with Latent variable Y. From this graph, we can already see that the main relationship between the BFI and the SAM is that of Openness and Extraversion to Episodic Memory and Future Prospection. Conscientiousness and the other aspects of memory might also participate. Therefore, the next aim is to define a treshold to interpret these relationships.
+
+## Contributions
+Contributions provide a treshold for the role variables play. This is true for all PCA-based methods. 
+
+```{r echo=FALSE}
+# Contributions -----------------------------------------------------------
+ctrI <- resPLSC$TExPosition.Data$ci
+ctrJ <- resPLSC$TExPosition.Data$cj
+signed.ctrI <- ctrI * sign(resPLSC$TExPosition.Data$fi)
+signed.ctrJ <- ctrJ * sign(resPLSC$TExPosition.Data$fj)
+
+# plot contributions for component 1
+ctrI.1 <- PrettyBarPlot2(signed.ctrI[,1],
+                         threshold = 1 / NROW(signed.ctrI),
+                         font.size = 3,
+                         color4bar = gplots::col2hex(col4BFI), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrI[,1]), 1.2*max(signed.ctrI[,1]))
+) + ggtitle("Contribution barplots", subtitle = 'Lx 1: Variable Contributions (Signed)')
+
+ctrJ.1 <- PrettyBarPlot2(signed.ctrJ[,1],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 3,
+                         color4bar = gplots::col2hex(col4SAM), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ[,1]), 1.2*max(signed.ctrJ[,1]))
+) + ggtitle("Contribution barplots", subtitle = 'Ly 1: Variable Contributions (Signed)')
+
+#Dimension 2
+ctrI.2 <- PrettyBarPlot2(signed.ctrI[,2],
+                         threshold = 1 / NROW(signed.ctrI),
+                         font.size = 3,
+                         color4bar = gplots::col2hex(col4BFI), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrI[,2]), 1.2*max(signed.ctrI[,2]))
+) + ggtitle("Contribution barplots", subtitle = 'Lx 2: Variable Contributions (Signed)')
+
+
+ctrJ.2 <- PrettyBarPlot2(signed.ctrJ[,2],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 3,
+                         color4bar = gplots::col2hex(col4SAM), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ[,2]), 1.2*max(signed.ctrJ[,2]))
+) + ggtitle("Contribution barplots", subtitle = 'Ly 2: Variable Contributions (Signed)')
+
+grid.arrange(
+  as.grob(ctrI.1), 
+  as.grob(ctrJ.1),
+  ncol = 2,nrow = 1,
+  top = textGrob("Contributions for Dimension 1", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+Here the contribution barplots strongly suggest that, for the BFI, Openness and Extraversion are the main contributors to Latent variable X, while for the SAM, Episodic Memory and Future Prospection are the main players. 
+
+## Bootstrap ratios
+As usual, bootstrap ratios ratios allow us to test the stability of each of the contributions: significant bootstrap ratios show that a given item contributes in simulated replications of the study (i.e. bootstrap samples).  
+```{r echo=FALSE}
+# Bootstrap Ratios --------------------------------------------------------
+BR.I <- resBoot4PLSC$bootRatios.i
+BR.J <- resBoot4PLSC$bootRatios.j
+
+laDim = 1
+
+# Plot the bootstrap ratios for Dimension 1
+ba001.BR1.I <- PrettyBarPlot2(BR.I[,laDim],
+                              threshold = 3,
+                              font.size = 3,
+                              color4bar = gplots::col2hex(col4BFI), # we need hex code
+                              ylab = 'Bootstrap ratios'
+                              #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle(paste0('Component ', laDim), subtitle = 'Table 1')
+
+ba002.BR1.J <- PrettyBarPlot2(BR.J[,laDim],
+                              threshold = 3,
+                              font.size = 3,
+                              color4bar = gplots::col2hex(col4SAM), # we need hex code
+                              ylab = 'Bootstrap ratios'
+                              #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("", subtitle = 'Table 2')
+
+# Plot the bootstrap ratios for Dimension 2
+laDim = 2
+ba003.BR2.I <- PrettyBarPlot2(BR.I[,laDim],
+                              threshold = 3,
+                              font.size = 3,
+                              color4bar = gplots::col2hex(col4BFI), # we need hex code
+                              ylab = 'Bootstrap ratios'
+                              #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle(paste0('Component ', laDim), subtitle = 'Table 1')
+
+ba004.BR2.J <- PrettyBarPlot2(BR.J[,laDim],
+                              threshold = 3,
+                              font.size = 3,
+                              color4bar = gplots::col2hex(col4SAM), # we need hex code
+                              ylab = 'Bootstrap ratios'
+                              #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("", subtitle = 'Table 2')
+
+grid.arrange(
+  as.grob(ba001.BR1.I), 
+  as.grob(ba002.BR1.J),
+  ncol = 2,nrow = 1,
+  top = textGrob("BRs for Dimension 1", gp = gpar(fontsize = 18, font = 3))
+)
+
+```
+
+The bootstrap ratios for Dimension 1 show that the contributions from the items of interest are stable. 
+
+#### A note on Dimension 2
+
+The screeplot indicated that only one dimension was significant. Thus, latent variables and saliences for dimension 2 and on are not graphed in this report. For illustration purposes, however, the contributions and bootstrap ratios for dimension 2 are found below.
+
+```{r echo=FALSE}
+grid.arrange(
+  as.grob(ctrI.2), 
+  as.grob(ctrJ.2),
+  ncol = 2,nrow = 1,
+  top = textGrob("Contributions for Dimension 2", gp = gpar(fontsize = 18, font = 3))
+)
+
+```
+
+Contribution barplots suggests that dimension 2 might be characterized by Agreeableness and several items on the SAM. However, the bootstrap ratios show that these contributions are not stable, and therefore dimension 2 should not be interpreted.
+
+```{r echo=FALSE}
+grid.arrange(
+  as.grob(ba003.BR2.I), 
+  as.grob(ba004.BR2.J),
+  ncol = 2,nrow = 1,
+  top = textGrob("BRs for Dimension 2", gp = gpar(fontsize = 18, font = 3))
+)
+
+```
+
+## Summary
+PLSC maximizes the covariance between two tables. It corresponds to an SVD of the correlation matrix between the tables. In this analysis, PLSC was used to show the correlation between personality dimensions and autobiographical memory. Results showed that Openness and Extraversion are related to Episodic Memory and Future Prospection. In addition, latent variable Y validated the grouping criteria. 
+
+
+
+
+
+
+
+

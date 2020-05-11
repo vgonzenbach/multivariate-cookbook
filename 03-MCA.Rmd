@@ -1,0 +1,782 @@
+# Multiple Correspondence Analysis
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+knitr::opts_knit$set(root.dir = "/Users/vgonzenb/Documents/RM3/My Work/MCA")
+setwd("/Users/vgonzenb/Documents/RM3/My Work/MCA")
+#load libraries
+library(ExPosition)
+library(InPosition)
+library(tidyverse)
+library(data4PCCAR)
+library(grDevices)
+library(corrplot)
+library(devtools)
+library(PTCA4CATA)
+library(ggplotify)
+library(gridExtra)
+library(grid)
+
+#Data----
+BFI = read.csv('../DATA/BFIdata.csv')
+bfi.quant = BFI[BFI$Active == TRUE,6:49]
+
+bfi.quant.Recoded = read.csv("../DATA/BFIdataRecoded.csv")
+
+#Colors----
+#color for  BFI
+
+col4BFI = c(rep("firebrick2", length(grep("Ex", colnames(bfi.quant)))),
+            rep("darkolivegreen3", length(grep("Ag", colnames(bfi.quant)))),
+            rep("dodgerblue2", length(grep("Co", colnames(bfi.quant)))),
+            rep("mediumpurple3", length(grep("Ne", colnames(bfi.quant)))),
+            rep("goldenrod1", length(grep("Op", colnames(bfi.quant)))))
+
+# color for Memory Groups (DESIGN) 
+memoryGroups = droplevels(BFI$memoryGroups[BFI$Active == TRUE])
+memoryColors = recode(memoryGroups, High = 'dodgerblue3', Low = 'brown3')
+
+#color for BFI disjunctive table
+bfi.quant.Recoded.dis = makeNominalData(bfi.quant.Recoded)
+
+col4BFI.dis = c(rep("firebrick2", length(grep("Ex", colnames(bfi.quant.Recoded.dis)))),
+            rep("darkolivegreen3", length(grep("Ag", colnames(bfi.quant.Recoded.dis)))),
+            rep("dodgerblue2", length(grep("Co", colnames(bfi.quant.Recoded.dis)))),
+            rep("mediumpurple3", length(grep("Ne", colnames(bfi.quant.Recoded.dis)))),
+            rep("goldenrod1", length(grep("Op", colnames(bfi.quant.Recoded.dis)))))
+source("histograms4MCA.R")
+```
+
+
+
+Multiple Correspondence Analysis (MCA) is an extension of correspondence analysis to deal with more than 2 categorical variables. MCA can also be used to analyze quantitative variables after a few pre-processing steps. In the case of quantitative variables, MCA can reveal non-linear effects that PCA would not be able to reveal. Thus, it is a good idea to try to "replicate" any PCA results with MCA to detect non-linear effects that might be of relevance. 
+
+#### Disjunctively-coded matrix
+MCA analyzes a disjunctively-coded matrix in which columns represent a particular level of a particular category while rows represent observations (e.g., participants). The disjunctively-coded matrix contains only 0's and 1's: a 1 marks the level of each categorical variable to which an observation belongs. For example, for a male participant the portion of the table describing gender would look like "1 0", marking "true" for male and "false" for female. 
+
+## The Data
+This example of MCA uses the same BFI data. However, the data has been transformed by binning. Essentially, groups were created for each of the variables so that each observation belongs to a single group. The histograms below show how the data was cut. 
+
+```{r echo=FALSE}
+grid.arrange(
+  as.grob(ex1),as.grob(ex2),as.grob(ex3),as.grob(ex4),as.grob(ex5),
+  as.grob(ag1),as.grob(ag2),as.grob(ag3),as.grob(ag4),as.grob(ag5),
+  as.grob(co1),as.grob(co2),as.grob(co3),as.grob(co4),as.grob(co5),
+  as.grob(ne1),as.grob(ne2),as.grob(ne3),as.grob(ne4),as.grob(ne5),
+  as.grob(op1),as.grob(op2),as.grob(op3),as.grob(op4),as.grob(op5),
+  ncol = 5,nrow = 5,
+  top = textGrob("Histogram for variables", gp = gpar(fontsize = 18, font = 3))
+)
+
+```
+
+Most of the variables were recoded so that they would be described by 3 groups. In general, it is ideal to try to maintain equal sample sizes between the groups of a given variable. When this was not possible, histograms where cut into 2 (e.g., Neuroticism item 3).
+
+## Correlation Matrix for Recoded Data
+
+Displayed is the correlational pattern between the items from the perspective of the new coded data. The overall pattern does not change drastically from that shown in the PCA chapter. One noticeable difference is that Agreeableness does show a clearer structure.
+```{r echo=FALSE}
+corrplot(cor(bfi.quant.Recoded), 
+         method = "circle", 
+         tl.col = col4BFI,
+         tl.cex = 0.63)
+
+```
+
+## Running MCA
+MCA is executed with the 'epMCA' function from the ExPosition package. The main parameter is 'make_data_nominal', which is set to FALSE here since the data has already been pre-processed.
+
+```{r echo=TRUE, include=FALSE}
+resMCA = epMCA(bfi.quant.Recoded.dis,
+      DESIGN = memoryGroups,
+      graphs = FALSE,
+      make_data_nominal = FALSE)
+```
+```{r echo=FALSE, include=FALSE}
+resMCA.inf = epMCA.inference.battery(bfi.quant.Recoded.dis,
+          DESIGN = memoryGroups,
+          make_data_nominal = FALSE,
+          graphs = FALSE)
+
+```
+## Scree Plot
+The screeplot shows that there are 7 dimensions whose eigenvalue achieved significance. Therefore, we want to pay special attention to dimensions 6 and 7, since this is a clear difference with the PCA results.
+
+```{r echo=FALSE, include=TRUE}
+# ScreePlot ---------------------------------------------------------------
+PlotScree(ev = resMCA$ExPosition.Data$eigs, p.ev = resMCA.inf$Inference.Data$components$p.vals,
+          )
+#Varimax Rotation with 7 Dimensions----
+vari.MCA = epVari(resMCA, dim2keep = 7)
+
+```
+
+
+## (Row) Factor Scores
+Factor Scores in MCA are calculated in the same way than in CA, and like in PCA, correspond to the projection of a row (or column) onto a component.
+
+```{r echo=FALSE}
+#———————————————————————————————————————————————————————————————————————————————————————
+##RAW Row Factor Scores Dim 1 2----
+#———————————————————————————————————————————————————————————————————————————————————————
+Fi = resMCA$ExPosition.Data$fi
+#Fi = vari.MCA$rotated.I
+axis1 = 1
+axis2 = 2
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = vari.MCA$rotated.eigs, #resMCA$ExPosition.Data$eigs,
+                                tau = round(resMCA$ExPosition.Data$t, 2), 
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "BFI Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+group.mean <- aggregate(Fi,
+                        by = list(memoryGroups), # must be a list
+                        mean)
+
+# need to format the results from `aggregate` correctly
+rownames(group.mean) <- group.mean[,1] # Use the first column as row names
+fi.mean <- group.mean[,-1] # Exclude the first column
+
+
+fi.mean.plot <- createFactorMap(fi.mean[,c(axis1:axis2)],
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3)
+
+## Tolerance Intervals------------------------------------------------------------------------
+TIplot <- MakeToleranceIntervals(Fi[,axis1:axis2],
+                                 design = memoryGroups,
+                                 # line below is needed
+                                 names.of.factors =  c("Dim6","Dim7"), # needed 
+                                 #axis1 = axis1, 
+                                 #axis2 = axis2,
+                                 col = levels(memoryColors),
+                                 line.size = .50, 
+                                 line.type = 3,
+                                 alpha.ellipse = .2,
+                                 alpha.line    = .4,
+                                 p.level       = .95)
+
+
+fi.WithMeanTI <- my.fi.plot$zeMap_background + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + TIplot + fi.labels
+
+fi.WithMeanTI
+```
+
+The plot for dimensions 1 and 2 shows that there is high overlap between the memory groups. Dimension 1 captures most of the variance 47%: this is a lot more than the variance captured by PCA on the first dimension (17%). 
+
+```{r echo=FALSE}
+##Bootstrapping group means----------------------------------------------------------------------------
+# Depend on the size of your data, this might take a while
+fi.boot <- Boot4Mean(Fi[,axis1:axis2],
+                     design = memoryGroups,
+                     niter = 1000)
+
+# Check other parameters you can change for this function
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube, # get the first two components
+                              col = levels(memoryColors),
+                              names.of.factors = paste0("Dimension ", c(axis1,axis2))
+                              )
+
+fi.WithMeanCI <- my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+fi.WithMeanCI
+
+```
+
+The confidence intervals show that the groups significantly differ on dimension 1. Graphing the factor scores for the columns will be more informative to interpret this component
+
+## Column Factor Scores
+
+In the following graphs, gray is used to color variables whose contributions are not important. Thus, only colored variables should be used to interpret a component.
+```{r echo=FALSE}
+## Fj Plot------------------------------------------------------------------------
+Fj = resMCA$ExPosition.Data$fj
+#Fj = vari.MCA$rotated.J
+# Plot 12----
+axis1 = 1
+axis2 = 2
+
+var12 <- data4PCCAR::getImportantCtr(ctr = apply(Fj,2,function(x){(x^2)/sum(x^2)}),
+                                     eig = resMCA$ExPosition.Data$eigs,
+                                     axis1 = axis1,
+                                     axis2 = axis2)
+importantVar <- var12$importantCtr.1or2
+col4ImportantVar <- col4BFI.dis
+col4NS <- 'gray90'
+col4ImportantVar[!importantVar] <- col4NS
+
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 3, # the size of the dots
+                              text.cex = 2, # the size of the text
+                              col.points = col4ImportantVar, # color of the dots
+                              col.labels = col4ImportantVar, # color for labels of dots
+)
+
+fj.plot1 <- my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+fj.plot1
+
+```
+
+The graph shows that component 1 captures a mix of Extraversion, Openness, Conscientiousness and Agreeableness items, while component 2 reflects mostly Neuroticism. 
+
+## Rotation
+To compare with results from PCA, a varimax rotation is applied to the 7 significant components. What follows are the graphs of (row and column) factor scores for the rotated dimensions.
+
+### Dimension 1 and 2
+
+```{r echo=FALSE}
+#Varimax Rotation with 7 Dimensions----
+vari.MCA = epVari(resMCA, dim2keep = 7)
+#———————————————————————————————————————————————————————————————————————————————————————
+##ROTATED Row Factor Scores Dim 1 2----
+#———————————————————————————————————————————————————————————————————————————————————————
+#Fi = resMCA$ExPosition.Data$fi
+Fi = vari.MCA$rotated.I
+axis1 = 1
+axis2 = 2
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = vari.MCA$rotated.eigs, #resMCA$ExPosition.Data$eigs,
+                                tau = round(resMCA$ExPosition.Data$t, 2), 
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "BFI Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+group.mean <- aggregate(Fi,
+                        by = list(memoryGroups), # must be a list
+                        mean)
+
+# need to format the results from `aggregate` correctly
+rownames(group.mean) <- group.mean[,1] # Use the first column as row names
+fi.mean <- group.mean[,-1] # Exclude the first column
+
+
+fi.mean.plot <- createFactorMap(fi.mean[,c(axis1:axis2)],
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3)
+
+##Bootstrapping group means--------------------------------------------------------------------------
+# Depend on the size of your data, this might take a while
+fi.boot <- Boot4Mean(Fi[,axis1:axis2],
+                     design = memoryGroups,
+                     niter = 1000)
+
+# Check other parameters you can change for this function
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube, # get the first two components
+                              col = levels(memoryColors),
+                              names.of.factors = paste0("Dimension ", c(axis1,axis2))
+                              )
+
+fi.WithMeanCI <- my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+
+## Fj Plot------------------------------------------------------------------------
+#Fj = resMCA$ExPosition.Data$fj
+Fj = vari.MCA$rotated.J
+# Plot 12----
+var12 <- data4PCCAR::getImportantCtr(ctr = apply(Fj,2,function(x){(x^2)/sum(x^2)}),
+                                     eig = vari.MCA$rotated.eigs,
+                                     axis1 = axis1,
+                                     axis2 = axis2)
+importantVar <- var12$importantCtr.1or2
+col4ImportantVar <- col4BFI.dis
+col4NS <- 'gray90'
+col4ImportantVar[!importantVar] <- col4NS
+
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 3, # the size of the dots
+                              text.cex = 2, # the size of the text
+                              col.points = col4ImportantVar, # color of the dots
+                              col.labels = col4ImportantVar, # color for labels of dots
+)
+
+fj.plot1 <- my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+
+grid.arrange(
+  as.grob(fi.WithMeanCI), as.grob(fj.plot1), 
+  ncol = 2,nrow = 1,
+  top = textGrob("Factor Scores and Loadings Components 1 and 2", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+The rotated factor scores make intepretation clearer. Component 1 captures Openness while Component 2 captures Neuroticism.
+
+### Dimension 3 and 4
+
+```{r echo=FALSE}
+#———————————————————————————————————————————————————————————————————————————————————————
+##ROTATED Row Factor Scores Dim 3 4----
+#———————————————————————————————————————————————————————————————————————————————————————
+
+axis1 = 3
+axis2 = 4
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = vari.MCA$rotated.eigs, #resMCA$ExPosition.Data$eigs,
+                                tau = round(resMCA$ExPosition.Data$t, 2), 
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "BFI Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+fi.mean.plot <- createFactorMap(fi.mean[,c(axis1:axis2)],
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3)
+
+##Bootstrapping group means--------------------------------------------------------------------------
+# Depend on the size of your data, this might take a while
+fi.boot <- Boot4Mean(Fi[,axis1:axis2],
+                     design = memoryGroups,
+                     niter = 1000)
+
+# Check other parameters you can change for this function
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube, # get the first two components
+                              col = levels(memoryColors),
+                              names.of.factors = paste0("Dimension ", c(axis1,axis2))
+                              )
+
+fi.WithMeanCI <- my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+
+## Fj Plot------------------------------------------------------------------------
+# Plot----
+var12 <- data4PCCAR::getImportantCtr(ctr = apply(Fj,2,function(x){(x^2)/sum(x^2)}),
+                                     eig = vari.MCA$rotated.eigs,
+                                     axis1 = axis1,
+                                     axis2 = axis2)
+importantVar <- var12$importantCtr.1or2
+col4ImportantVar <- col4BFI.dis
+col4NS <- 'gray90'
+col4ImportantVar[!importantVar] <- col4NS
+
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 3, # the size of the dots
+                              text.cex = 2, # the size of the text
+                              col.points = col4ImportantVar, # color of the dots
+                              col.labels = col4ImportantVar, # color for labels of dots
+)
+
+fj.plot1 <- my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+
+grid.arrange(
+  as.grob(fi.WithMeanCI), as.grob(fj.plot1), 
+  ncol = 2,nrow = 1,
+  top = textGrob("Factor Scores and Loadings Components 3 and 4", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+Dimensions 3 and 4 correspond to Agreeableness and Extraversion, respectively. Groups appear to differ on Dimension 4 (Extraversion), but effect is less clear than in PCA. 
+
+### Dimension 5 and 6
+
+```{r echo=FALSE}
+#———————————————————————————————————————————————————————————————————————————————————————
+##ROTATED Row Factor Scores Dim 5 6----
+#———————————————————————————————————————————————————————————————————————————————————————
+
+axis1 = 5
+axis2 = 6
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = vari.MCA$rotated.eigs, #resMCA$ExPosition.Data$eigs,
+                                tau = round(resMCA$ExPosition.Data$t, 2), 
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "BFI Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+fi.mean.plot <- createFactorMap(fi.mean[,c(axis1:axis2)],
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3)
+
+##Bootstrapping group means--------------------------------------------------------------------------
+# Depend on the size of your data, this might take a while
+fi.boot <- Boot4Mean(Fi[,axis1:axis2],
+                     design = memoryGroups,
+                     niter = 1000)
+
+# Check other parameters you can change for this function
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube, # get the first two components
+                              col = levels(memoryColors),
+                              names.of.factors = paste0("Dimension ", c(axis1,axis2))
+                              )
+
+fi.WithMeanCI <- my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+
+## Fj Plot------------------------------------------------------------------------
+# Plot----
+var12 <- data4PCCAR::getImportantCtr(ctr = apply(Fj,2,function(x){(x^2)/sum(x^2)}), 
+                                     eig = vari.MCA$rotated.eigs,
+                                     axis1 = axis1,
+                                     axis2 = axis2)
+importantVar <- var12$importantCtr.1or2 
+col4ImportantVar <- col4BFI.dis
+col4NS <- 'gray90'
+col4ImportantVar[!importantVar] <- col4NS
+
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 3, # the size of the dots
+                              text.cex = 2, # the size of the text
+                              col.points = col4ImportantVar, # color of the dots
+                              col.labels = col4ImportantVar, # color for labels of dots
+)
+
+fj.plot1 <- my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+
+grid.arrange(
+  as.grob(fi.WithMeanCI), as.grob(fj.plot1), 
+  ncol = 2,nrow = 1,
+  top = textGrob("Factor Scores and Loadings Components 5 and 6", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+Dimension 5 corresponds to Conscientiousness. However, it is unclear what dimension 6 corresponds from looking at this graph. It appears it might be a mixture of moderate scores in Neuroticism, Extraversion, and Openness.
+
+### Dimension 6 and 7
+
+```{r echo=FALSE}
+#———————————————————————————————————————————————————————————————————————————————————————
+##ROTATED Row Factor Scores Dim 6 7----
+#———————————————————————————————————————————————————————————————————————————————————————
+
+axis1 = 7
+axis2 = 6
+
+fi.labels <- createxyLabels.gen(axis1, axis2,
+                                lambda = vari.MCA$rotated.eigs, #resMCA$ExPosition.Data$eigs,
+                                tau = round(resMCA$ExPosition.Data$t, 2), 
+                                axisName = "Component ")
+
+my.fi.plot <- createFactorMap(Fi, # data
+                              title = "BFI Row Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 2, # the size of the dots
+                              text.cex = 0, # the size of the text
+                              col.points = memoryColors, # color of the dots
+                              col.labels = memoryColors, # color for labels of dots
+)
+
+fi.mean.plot <- createFactorMap(fi.mean[,c(axis1:axis2)],
+                                alpha.points = 0.8,
+                                col.points = levels(memoryColors),
+                                col.labels = levels(memoryColors),
+                                pch = 17,
+                                cex = 3,
+                                text.cex = 3)
+
+##Bootstrapping group means--------------------------------------------------------------------------
+# Depend on the size of your data, this might take a while
+fi.boot <- Boot4Mean(Fi[,axis1:axis2],
+                     design = memoryGroups,
+                     niter = 1000)
+
+# Check other parameters you can change for this function
+bootCI4mean <- MakeCIEllipses(fi.boot$BootCube, # get the first two components
+                              col = levels(memoryColors),
+                              names.of.factors = paste0("Dimension ", c(axis1,axis2))
+                              )
+
+fi.WithMeanCI <- my.fi.plot$zeMap_background + bootCI4mean + my.fi.plot$zeMap_dots + fi.mean.plot$zeMap_dots + fi.mean.plot$zeMap_text + fi.labels
+
+## Fj Plot------------------------------------------------------------------------
+# Plot----
+var12 <- data4PCCAR::getImportantCtr(ctr = apply(Fj,2,function(x){(x^2)/sum(x^2)}), 
+                                     eig = vari.MCA$rotated.eigs,
+                                     axis1 = axis1,
+                                     axis2 = axis2)
+importantVar <- var12$importantCtr.1or2 
+col4ImportantVar <- col4BFI.dis
+col4NS <- 'gray90'
+col4ImportantVar[!importantVar] <- col4NS
+
+my.fj.plot <- createFactorMap(Fj, # data
+                              title = "BFI Column Factor Scores", # title of the plot
+                              axis1 = axis1, axis2 = axis2, # which component for x and y axes
+                              pch = 19, # the shape of the dots (google `pch`)
+                              cex = 3, # the size of the dots
+                              text.cex = 2, # the size of the text
+                              col.points = col4ImportantVar, # color of the dots
+                              col.labels = col4ImportantVar, # color for labels of dots
+)
+
+fj.plot1 <- my.fj.plot$zeMap + fi.labels # you need this line to be able to save them in the end
+
+grid.arrange(
+  as.grob(fi.WithMeanCI), as.grob(fj.plot1), 
+  ncol = 2,nrow = 1,
+  top = textGrob("Factor Scores and Loadings Components 6 and 7", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+Dimension 7 seems to also capture moderate levels of personality, particularly, agreeableness and conscientiousness. Although this effect illustrates the differences between PCA and MCA nicely, the groups overlap in this dimension. Looking at this data in isolation, it is unclear whether these non-linear effects are merely an artifact of how the variables were binned. 
+
+## Contributions 
+
+```{r}
+# Contributions -----------------------------------------------------------
+ctrJ <- apply(Fj,2,function(x){(x^2)/sum(x^2)})
+signed.ctrJ <- ctrJ * sign(Fj)
+
+# plot contributions for component 1
+ctrJ.1 <- PrettyBarPlot2(signed.ctrJ[,1],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ), 1.2*max(signed.ctrJ))
+) + ggtitle("Contribution barplots", subtitle = 'Component 1: Variable Contributions (Signed)')
+
+# plot contributions for component 2
+ctrJ.2 <- PrettyBarPlot2(signed.ctrJ[,2],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ), 1.2*max(signed.ctrJ))
+) + ggtitle("",subtitle = 'Component 2: Variable Contributions (Signed)')
+
+ctrJ.3 <- PrettyBarPlot2(signed.ctrJ[,3],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ), 1.2*max(signed.ctrJ))
+) + ggtitle("",subtitle = 'Component 3: Variable Contributions (Signed)')
+
+ctrJ.4 <- PrettyBarPlot2(signed.ctrJ[,4],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ[,4]), 1.2*max(signed.ctrJ[,4]))
+) + ggtitle("",subtitle = 'Component 4: Variable Contributions (Signed)')
+
+ctrJ.5 <- PrettyBarPlot2(signed.ctrJ[,5],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ[,5]), 1.2*max(signed.ctrJ[,5]))
+) + ggtitle("",subtitle = 'Component 5: Variable Contributions (Signed)')
+
+ctrJ.6 <- PrettyBarPlot2(signed.ctrJ[,6],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ[,6]), 1.2*max(signed.ctrJ[,6]))
+) + ggtitle("",subtitle = 'Component 6: Variable Contributions (Signed)')
+
+ctrJ.7 <- PrettyBarPlot2(signed.ctrJ[,7],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 2,
+                         color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.2*min(signed.ctrJ[,7]), 1.2*max(signed.ctrJ[,7]))
+) + ggtitle("",subtitle = 'Component 7: Variable Contributions (Signed)')
+
+grid.arrange(
+  as.grob(ctrJ.1), as.grob(ctrJ.2), 
+  ncol = 1,nrow = 2,
+  top = textGrob("Contributions for Components 1 and 2", gp = gpar(fontsize = 18, font = 3))
+)
+
+```
+```{r}
+grid.arrange(
+  as.grob(ctrJ.3), as.grob(ctrJ.4), 
+  ncol = 1,nrow = 2,
+  top = textGrob("Contributions for Components 3 and 4", gp = gpar(fontsize = 18, font = 3))
+)
+```
+```{r}
+grid.arrange(
+  as.grob(ctrJ.5), 
+  ncol = 1,nrow = 1,
+  top = textGrob("Contributions for Component 5", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+Contributions for dimension 1 to 5 confirm the pattern from the factor loading plots. 
+
+Contributions to dimension 6 seem mostly driven by Extraversion, while contributions to dimension 7 are mixed. Since Extraversion was more consistently binned into 3 groups, component 6 could represent an artifact steeming from our binning strategy. However, since all variables were binned using this criteria, MCA reveals that not all the subscales of the BFI are equally sensitive: the Extraversion subscale discriminates between different levels better. 
+
+```{r}
+grid.arrange(
+  as.grob(ctrJ.6),as.grob(ctrJ.7),
+  ncol = 1,nrow = 2,
+  top = textGrob("Contributions for Components 6 and 7", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+## Bootstrap Ratios
+
+```{r}
+##Bootstrap Ratios----
+BR <- resMCA.inf$Inference.Data$fj.boots$tests$boot.ratios[,1:7] %*% vari.MCA$rotationMatrix
+laDim <- 1
+ba001.BR1 <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2,
+                            color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                            ylab = 'Bootstrap ratios'
+                            #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+laDim <- 2
+ba001.BR2 <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2,
+                            color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                            ylab = 'Bootstrap ratios'
+                            #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+laDim <- 3
+ba001.BR3 <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2,
+                            color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                            ylab = 'Bootstrap ratios'
+                            #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+laDim <- 4
+ba001.BR4 <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2,
+                            color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                            ylab = 'Bootstrap ratios'
+                            #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+laDim <- 5
+ba001.BR5 <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2,
+                            color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                            ylab = 'Bootstrap ratios'
+                            #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+laDim <- 6
+ba001.BR6 <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2,
+                            color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                            ylab = 'Bootstrap ratios'
+                            #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+laDim <- 7
+ba001.BR7 <- PrettyBarPlot2(BR[,laDim],
+                            threshold = 3,
+                            font.size = 2,
+                            color4bar = gplots::col2hex(col4BFI.dis), # we need hex code
+                            ylab = 'Bootstrap ratios'
+                            #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("Bootstrap ratios", subtitle = paste0('Component ', laDim))
+
+grid.arrange(
+  as.grob(ba001.BR1),as.grob(ba001.BR2),
+  ncol = 1,nrow = 2,
+  top = textGrob("BRs for Components 1 and 2", gp = gpar(fontsize = 18, font = 3))
+)
+```
+```{r}
+grid.arrange(
+  as.grob(ba001.BR3),as.grob(ba001.BR4),
+  ncol = 1,nrow = 2,
+  top = textGrob("BRs for Components 3 and 4", gp = gpar(fontsize = 18, font = 3))
+)
+```
+```{r}
+grid.arrange(
+  as.grob(ba001.BR5),
+  ncol = 1,nrow = 1,
+  top = textGrob("BRs for Components 5", gp = gpar(fontsize = 18, font = 3))
+)
+```
+```{r}
+grid.arrange(
+  as.grob(ba001.BR6),as.grob(ba001.BR7),
+  ncol = 1,nrow = 2,
+  top = textGrob("BRs for Components 6 and 7", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+Bootstrap ratios confirm that all dimensions are stable, even dimensions 6 and 7. Therefore, MCA suggests non-linear effects of personality dimensions, and that the BFI might be more tailored to caturing non-linear effects associated with Extroversion.
+
+## Summary
+MCA is an extension of CA used to analyze a matrix of observations by (nominal) variables. In this analysis, MCA replicated and extended the results from PCA. MCA revealed a non-linear effect of Extraversion. These non-linear effects of the BFI might be useful information when comparing performance with other personality scales or when further developing the BFI itself. If moderate levels of Extraversion (and other personality dimensions) differentially predict certain outcomes, then it would be beneficial to utilize a psychometric scale that can capture such effects.  
+\indent However, the existence of non-linear effects did not particularly illuminate the data from the perspective of our main research question: 'how are personality factors related to memory'? Therefore, if overlapping results like these were to be published, PCA would likely suffice, and perhaps be prefereable due to its wider accessibility. 
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,373 @@
+# Correspondence Analysis
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/vgonzenb/Documents/RM3/My Work/CA")
+setwd("/Users/vgonzenb/Documents/RM3/My Work/CA")
+library(ExPosition)
+library(InPosition)
+library(tidyverse)
+library(MExPosition)
+library(data4PCCAR)
+library(PTCA4CATA)
+library(grDevices)
+library(corrplot)
+library(devtools)
+library(ggplotify)
+library(gridExtra)
+library(officer)
+library(grid)
+
+#Data----
+data2016 = read.csv("data2016.csv")
+data2004 = read.csv("data2004.csv")
+
+#rename rows
+rownames(data2016) = data2016[,1]
+rownames(data2004) = data2004[,1]
+data2016 = data2016[,-1]
+data2004 = data2004[,-1]
+
+#take columns and rows that will be active
+active.2016 = data2016[-c(10:12), 2:4]
+X = as.matrix(active.2016)
+```
+
+Correspondence Analysis (CA) is often described as an adaptation of PCA for categorical data. This means that CA extracts the important information from categorical variables in a way that can be interpreted geometrically.  A key difference is that the data analyzed in CA is not a covariance/correlation matrix as in PCA. Instead, CA analyzes a contigency table between two categorical variables.  
+\indent Prior to running CA, the counts in a contingency table are transformed to instead reflect probabilities. This is equivalent to dividing the matrix by its sum. Then, the factor scores are calculated through the generalized singular value decomposition (GSVD) of the probability matrix (i.e. Z). A key difference between GSVD and SVD is that GSVD accounts for masses and weights as added contraints. 
+  
+### Masses and Weights  
+Masses correspond to rows and weights correspond to columns. These quantities reflect the importance of a row or column, respectively; they amount to the proportion of cases in a row (or column) relative to the rest of the table. For example, if a column is not used often then it contains **more** information since rare cases allow us to discriminate better. Thus, the weights (and masses) are calculated as the **inverse** of the proportion this column (or row) represents in the total table. 
+  
+### Two kinds of factor scores
+Another difference between PCA and CA is that CA calculates two set of factor scores: one for the rows and one for the columns. Thus, the space between rows and column factor scores is interpretable—unlike PCA, where, for comparing observations to variables only the angles and not the distances are compared. 
+
+## Data
+The data analyzed in this example is a contingency table containing counts of how many deaths of each type are reported in different news media. Type of death can be found in the rows, while news outlet is found in the columns. 
+
+Let's introduce the concept of active and supplementary data. (This concept is relevant to all multivariate analyses in this document but is introduced here due to its central role in this particular example of CA.) 
+
+```{r show data, echo=FALSE}
+data2016
+```
+
+#### Active data
+The term "active data" refers to the data that is used to compute factor scores, or the data inputted in the CA function. In carrying out any multivariate analysis, it is important to choose which data will be active and which data will be left out. In the data shown above, it is evident that deaths reported by the CDC far outnumber those of other news outlets. Consequently, if this column were to be included the contribution of CDC would dominate the CA results, leaving little room for other news outlets to contribute. Thus, this column is not included as active but instead as a supplementary column. 
+
+#### Supplementary data
+Any data that is not used to calculate factor scores can be projected onto the vector space of the CA results to aid interpretation. This is the meaning of supplementary data. Along with including the CDC as a supplementary column, the rows for Suicide, Homicide and Terrorism will be excluded from the active data set and included as supplementary rows. 
+  
+## The contingency table transformed: table of deviations. 
+
+The table displayed below is not a correlation matrix like in PCA. Instead, it is the result of applying a transformation onto the contingency table so that each cell represents the deviation from expectation (based on the row and column totals). Thus, the big red dot at the intersection of 'Google' and 'Cancer' signifies that the amount of cancer deaths reported by Google fall far below the mean of cancer deaths reported by all news sources in the data. 
+
+```{r corrplot, echo=FALSE}
+#corrplot
+chi2 <- chisq.test(X)
+Inertia.cells <- chi2$residuals / sqrt(sum(X))
+corrplot(t(Inertia.cells), is.cor = FALSE)
+```
+
+## Running CA
+CA is executed by the 'epCA' function in the ExPosition package.
+The code below shows what parameters are relevant for running CA:
+
+1. how the data is arranged/transposed (i.e. which categories are in the rows and which in the columns). This is especially important in asymmetric CA solutions.
+2. whether column factor scores will be symmetric or asymmetric. 
+
+```{r}
+resCA.sym  <- epCA(X, symmetric = TRUE, graphs = FALSE)
+```
+
+```{r include=FALSE}
+resCAinf.sym4bootJ  <- epCA.inference.battery(X, symmetric = TRUE, graphs = FALSE)
+resCAinf.sym4bootI <- epCA.inference.battery(t(X), symmetric = TRUE, graphs = FALSE)
+```
+
+```{r include=FALSE}
+#Asymmetric CA
+resCA.asym <- epCA(X, symmetric = FALSE, graphs = FALSE)
+resCAinf.asym4bootJ  <- epCA.inference.battery(X, symmetric = FALSE, graphs = FALSE)
+```
+
+## Scree Plot
+
+The scree plot below show that the data can be described by two dimensions. And the permutation test shows that both components are statistically significant. However, total variance explained varies widely between the two components: the first explains 95% of the variance and the second only 5%. This should be kept in mind when interpreting factor scores. 
+```{r echo=FALSE}
+PlotScree(ev = resCA.sym$ExPosition.Data$eigs,
+                      p.ev = resCAinf.sym4bootJ$Inference.Data$components$p.vals)
+
+```
+
+## Asymmetric plot
+As mentioned above, a defining characteristic of CA is that the relationship between factor scores for the rows and the columns can be represented in two ways: symmetrically or asymmetrically. The difference between the two is on whether column factor scores are weighted according to (the inverse of) the proportion of inertia relative to the whole table.  
+\indent The plot below is called an asymmetric biplot. In this kind of graph, the space between columns is represented with the weights of each column in mind (i.e. weights multiply the distance of each column factor score from the origin). The purpose of graphing an asymmetric biplot is that it allows for direct interpretation of the space between a row and a column.
+
+```{r echo=FALSE}
+# Supplementary (prep)-----------------------------------------------------------
+#prepare supplementary rows and columns for projection
+sup.table = data2004[-c(10:12), 2:4]
+sup.rows = data2016[c(10:12), 2:4]
+sup.col = as.matrix(data2016[-c(10:12),1])
+colnames(sup.col) = "CDC"
+rownames(sup.col) = rownames(active.2016)
+
+# Graph prep --------------------------------------------------------------
+# Factor scores
+Fi   <- resCA.sym$ExPosition.Data$fi
+Fj   <- resCA.sym$ExPosition.Data$fj
+Fj.a <- resCA.asym$ExPosition.Data$fj
+
+
+# constraints -----
+# first get the constraints correct
+constraints.sym  <- minmaxHelper(mat1 = Fi, mat2  = Fj)
+constraints.asym <- minmaxHelper(mat1 = Fi, mat2  = Fj.a)
+
+# baseMaps ----
+colnames(Fi) <- paste("Dimension ", 1:ncol(Fi))
+colnames(Fj) <- paste("Dimension ", 1:ncol(Fj))
+colnames(Fj.a) <- paste("Dimension ", 1:ncol(Fj.a))
+
+
+# Mapping -----------------------------------------------------------------
+# Active Data: factor scores-----
+asymMap  <- createFactorMapIJ(Fi,Fj.a,
+                              alpha.labels.i = .8,
+                              text.cex.i = 3) #creates factor score with the default settings for the active data
+
+#-----With supplementary rows----
+proj.rows = supplementaryRows(sup.rows, resCA.asym) #projects supplementary elements onto the CA vector space
+proj.cdc = supplementaryCols(sup.col, resCA.sym)
+constraints.sup  <- minmaxHelper(mat1 = rbind(Fi, proj.rows$fii), #set constraint according to the scores that will be projected
+                                 mat2  = rbind(Fj, proj.cdc$fjj))
+
+mapSup <- createFactorMapIJ(Fi = as.data.frame(proj.rows$fii), 
+                            Fj = as.data.frame(proj.cdc$fjj),
+                            text.cex.i = 3,
+                            col.points.i = "chocolate1",
+                            col.labels.i = 'chocolate1' ,
+                            font.face.i = 'italic',
+                            alpha.labels.i = .8,
+                            alpha.points.i = .8,
+                            col.points.j = 'Pink',
+                            col.labels.j = 'Pink',
+                            alpha.labels.j = .9,
+                            font.face.j = 'italic',
+                            alpha.points.j = .8,
+                            constraints = constraints.sup
+)
+# Make the simplex visible
+zePoly.J <- PTCA4CATA::ggdrawPolygon(Fj.a,
+                                      color = 'darkolivegreen4',
+                                      size = .2,
+                                      fill =  'darkolivegreen4',
+                                      alpha = .1)
+# Labels
+labels4CA <- createxyLabels(resCA = resCA.asym)
+
+# Combine all elements you want to include in this plot
+map.I.sup.asym <- asymMap$baseMap + zePoly.J + 
+  asymMap$I_points + asymMap$I_labels +
+  asymMap$J_labels + asymMap$J_points + 
+  mapSup$I_labels + mapSup$I_points +
+  labels4CA + 
+  ggtitle('Asymmetric Map with Supplementary Observation and Simplex') 
+map.I.sup.asym
+
+
+```
+
+The relative distance between a row and all columns provides information over how characteristic that row is for each column. Since CA analyzes the probability matrix of deviations from the average, factor scores nearest to the origin are not particularly characteristic of any particular column but instead characterize the average column. Conversely, factor scores at the extremes provide more information about particular cases.  
+\indent For example, reporting deaths related to Kidney failure is closer to Google than to other news sources, therefore reporting this type of death characterizes Google relative to other news outlets. Deaths by Alzheimer's Disease are closer to Google than to other news outlets as well, but between NYT and the Guardian AD deaths gravitate towards NYT. 
+  
+#### Interpreting components 
+The first component explains most of the variance in this table. Since it separates between Google and NYT and The Guardian, we can conclude that this component represents traditional vs. crowd-sourced media. Row factor scores supply information about what kinds of deaths are reported across each type of media.  
+\indent The second component explains less variance. It might only be distinguishing between NYT and The Guardian, a not so interesting point; however, we might be able to (perhaps) generalize this pattern to British vs US media, but having more columns representing these media would be helpful to make this interpretation. 
+  
+#### Supplementary Projections: Homicide, Suicide, Terrorism. 
+Deaths related to Homicide, Suicide and Terrorism where excluded from the main, active data set. Yet by projecting these as supplementary rows onto the vector space, information can be acquired from these data without them dominating the results of the analysis.  
+\indent The projected factor scores show that these types of death are extremely characteristic of the traditional new outlets and they are reported equally in NYT and The Guardian. This helps further characterize what distinguishes between traditional and crowd-sourced news outlets: more sensational but rarer deaths tend to be reported more in the newspaper. 
+
+## Symmetric Plot with CDC
+
+Symmetric Plots allow for the examination of one type of factor score (i.e. either rows or columns) relatively well since they accurately represent column factor scores from the point of view of total variance explained. Further, we can easily project supplementary elements (again, either rows or columns depending on the active factor scores being represented) to gain additional information on the resulting components. 
+
+```{r echo=FALSE}
+# Symmetric  with CDC -----------------------------------------------------
+# create symmetric map
+symMap  <- createFactorMapIJ(Fi,Fj,
+                              alpha.labels.i = .8,
+                              text.cex.i = 3) #creates factor score with the default settings for the active data
+
+
+labels4CA <- createxyLabels(resCA = resCA.asym)
+
+# Combine all elements you want to include in this plot
+map.J.sup.sym <- symMap$baseMap + zePoly.J + 
+  #symMap$I_points + symMap$I_labels +
+  symMap$J_labels + symMap$J_points + 
+  #mapSup$I_labels + mapSup$I_points +
+  mapSup$J_labels + mapSup$J_points +
+  labels4CA + 
+  ggtitle('Symmetric Map with Supplementary Column') 
+map.J.sup.sym
+```
+
+This graph shows all columns from the original data (with CDC as a supplementary projection). Symmetric plots show the column scores in relation to the amount of variance explained. Thus, the plot shows the distance between factor scores on the left and on the right is much wider than the distance going up or down.  
+\indent By focusing on CDC factor scores, we can strengthen our interpretation of components 1 and 2. In relation to component 1, the CDC falls relatively close to the middle. Since, the CDC is the most objective source for all types of deaths (in the US), we can interpret deviation of columns relative to the middle as deviations from objectivity: traditional news sources report sensational and rare deaths, however, this does not mean that Google reports "the true proportions" of deaths. Rather it seems that both extremes deviate from objectivity: and what component 1 might be reflecting is how much people seek out information on certain deaths (e.g., people might spontaneously worry about overdose more frequently than being a victim in a terrorist attack).  
+\indent On component 2, the CDC loads highly on the positive end (4 times closer to NYT than The Guardian). Since the CDC is based in the U.S., this lends support to the interpretation that dimension 2 captures a regional effect, such that death reports on NYT more closely align with total deaths reported in the US. However, when compared to the effects captured by the first component, this regional effect seems to be rather small. What matters most is the kind of news outlet (i.e. traditional vs. crowd-sourced).
+ 
+## Symmetric Plot with data from 2004
+We have another interesting research question: we want to know how the reporting of certain deaths has changed over time. To answer this question, we supplementary project a table with the same columns and rows but for 2004 deaths and display the results in a symmetric map. 
+
+```{r echo=FALSE}
+# Symmetric with 2004 -----------------------------------------------------
+proj.table = supplementaryRows(sup.table, resCA.sym) #projects supplementary elements onto the CA vector space
+constraints.sup  <- minmaxHelper(mat1 = rbind(Fi, proj.table$fii), #set constraint according to the scores that will be projected
+                                 mat2  = rbind(Fj))
+
+mapSup <- createFactorMapIJ(Fi = as.data.frame(proj.table$fii), 
+                            Fj = as.data.frame(proj.cdc$fjj),
+                            text.cex.i = 3,
+                            col.points.i = "indianred1",
+                            col.labels.i = 'indianred1' ,
+                            font.face.i = 'italic',
+                            alpha.labels.i = .8,
+                            alpha.points.i = .8,
+                            col.points.j = 'Pink',
+                            col.labels.j = 'Pink',
+                            alpha.labels.j = .9,
+                            font.face.j = 'italic',
+                            alpha.points.j = .8,
+                            constraints = constraints.sup
+)
+# Labels
+labels4CA <- createxyLabels(resCA = resCA.sym)
+
+# Combine all elements you want to include in this plot
+map.I.sup.sym <- symMap$baseMap + #zePoly.J + 
+  symMap$I_points + symMap$I_labels +
+  #symMap$J_labels + symMap$J_points + 
+  mapSup$I_labels + mapSup$I_points +
+  labels4CA + 
+  ggtitle('Symmetric Map with Supplementary Observation from 2004') 
+map.I.sup.sym
+
+```
+
+Examining the graph above shows that the most striking change has been on how Alzheimer's Disease deaths are reported. The factor scores for AD have moved to the left and up. This means that, relative to 2004, Alzheimer's Disease deaths have started to be reported more by traditional news media. Similar patterns can be appreciated for Overdose, Diabetes, Heart Disease and Cancer. Further, the vertical change indicates that AD started to be more reported by NYT in recent years. (Perhaps this could be generalized to all US media if we had more data).
+
+## Contributions
+Contributions in CA are interpreted just as in PCA. The main difference is that, in CA, contributions to both row and column factor scores are of interest. (They can also be of interest in PCA if there are clusters of participants).
+
+```{r echo=FALSE}
+signed.ctrI <- resCA.sym$ExPosition.Data$ci * sign(resCA.sym$ExPosition.Data$fi)
+signed.ctrJ <- resCA.sym$ExPosition.Data$cj * sign(resCA.sym$ExPosition.Data$fj)
+
+# plot contributions of rows for component 1
+ctrI.1 <- PrettyBarPlot2(signed.ctrI[,1],
+                         threshold = 1 / NROW(signed.ctrI),
+                         font.size = 3,
+                         color4bar = gplots::col2hex(resCA.sym$Plotting.Data$fi.col), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.5*min(signed.ctrI), 1.5*max(signed.ctrI))
+) + ggtitle("Component 1", subtitle = 'rows')
+
+# plot contributions of columns for component 1
+ctrJ.1 <- PrettyBarPlot2(signed.ctrJ[,1],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 3,
+                         color4bar = gplots::col2hex(resCA.sym$Plotting.Data$fj.col), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.5*min(signed.ctrJ), 1.5*max(signed.ctrJ))
+) + ggtitle("", subtitle = 'columns')
+
+# plot contributions of rows for component 2
+ctrI.2 <- PrettyBarPlot2(signed.ctrI[,2],
+                         threshold = 1 / NROW(signed.ctrI),
+                         font.size = 3,
+                         color4bar = gplots::col2hex(resCA.sym$Plotting.Data$fi.col), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.5*min(signed.ctrI), 1.5*max(signed.ctrI))
+) + ggtitle("Component 2", subtitle = 'rows')
+
+# plot contributions of columns for component 2
+ctrJ.2 <- PrettyBarPlot2(signed.ctrJ[,2],
+                         threshold = 1 / NROW(signed.ctrJ),
+                         font.size = 3,
+                         color4bar = gplots::col2hex(resCA.sym$Plotting.Data$fj.col), # we need hex code
+                         ylab = 'Contributions',
+                         ylim = c(1.5*min(signed.ctrJ), 1.5*max(signed.ctrJ))
+) + ggtitle("", subtitle = 'columns')
+grid.arrange(
+  as.grob(ctrI.1),as.grob(ctrJ.1),as.grob(ctrI.2),as.grob(ctrJ.2),
+  ncol = 2,nrow = 2,
+  top = textGrob("Contributions", gp = gpar(fontsize = 18, font = 3))
+)
+
+
+```
+
+The contribution barplots confirms our interpretation: component 1 distinguishes between Google and traditional news outlets, while component 2 distinguishes between NYT and The Guardian (or US vs British Media if the pattern were to be generalized). From the point of view of the rows, the contribution barplots isolate rows that are of special importance for understanding difference across news outlets. Contributions of the rows show that Google reports more Kidney and Overdose death than traditional outlets. Conversely, Reporting cancer deaths is relatively uncharacteristic of Google when compared to other news outlets. 
+
+## Bootstrap ratios
+Bootstrap ratios are computed to test the stability of contributions.
+
+```{r echo=FALSE}
+# Bootstrap Ratios --------------------------------------------------------
+BR.I <- resCAinf.sym4bootI$Inference.Data$fj.boots$tests$boot.ratios
+BR.J <- resCAinf.sym4bootJ$Inference.Data$fj.boots$tests$boot.ratios
+
+
+laDim = 1
+# Plot the bootstrap ratios for Dimension 1
+ba001.BR1.I <- PrettyBarPlot2(BR.I[,laDim],
+                              threshold = 2,
+                              font.size = 3,
+                              color4bar = gplots::col2hex(resCA.sym$Plotting.Data$fi.col), # we need hex code
+                              ylab = 'Bootstrap ratios'
+                              #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle(paste0('Component ', laDim), subtitle = 'rows')
+
+ba002.BR1.J <- PrettyBarPlot2(BR.J[,laDim],
+                              threshold = 2,
+                              font.size = 3,
+                              color4bar = gplots::col2hex(resCA.sym$Plotting.Data$fj.col), # we need hex code
+                              ylab = 'Bootstrap ratios'
+                              #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("", subtitle = 'columns')
+
+# Plot the bootstrap ratios for Dimension 2
+laDim = 2
+ba003.BR2.I <- PrettyBarPlot2(BR.I[,laDim],
+                              threshold = 2,
+                              font.size = 3,
+                              color4bar = gplots::col2hex(resCA.sym$Plotting.Data$fi.col), # we need hex code
+                              ylab = 'Bootstrap ratios'
+                              #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle(paste0('Component ', laDim), subtitle = 'rows')
+
+ba004.BR2.J <- PrettyBarPlot2(BR.J[,laDim],
+                              threshold = 2,
+                              font.size = 3,
+                              color4bar = gplots::col2hex(resCA.sym$Plotting.Data$fj.col), # we need hex code
+                              ylab = 'Bootstrap ratios'
+                              #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
+) + ggtitle("", subtitle = 'columns')
+
+grid.arrange(
+  as.grob(ba001.BR1.I),as.grob(ba002.BR1.J),as.grob(ba003.BR2.I),as.grob(ba004.BR2.J),
+  ncol = 2,nrow = 2,
+  top = textGrob("Bootstrap ratios", gp = gpar(fontsize = 18, font = 3))
+)
+```
+
+In general, bootstrap ratios show that the contributions are stable. In particular, more information can be gleaned from contributions to component 2, further clarifying differences between the Guardian and NYT (or British and US media in general).
+
+## Summary
+CA was used to analyze to a contingency table of type of death reported (rows) by news outlet (columns). The analysis revealed that news outlets can be classified according to a traditional vs crowd-sourced dimension (component 1), and that this dimension captures distinctions between everyday concerns and rare diseases (or human-caused death), the latter being more characteristic of traditional news. Further, a second dimension corresponding to a possible regional effect was revealed by the inclusion of CDC as a supplementary column. Thus, NYT and the Guardian differed on this dimension (with NYT reporting deaths that more closely align with total deaths in the US).
+
+
+
+
